@@ -1,0 +1,1141 @@
+<title>⚽ Gestão Time Trairagem 2026</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6;
+    --series-1-soft: #cde2fb;
+    --good: #0ca30c;
+    --warning: #b8860b;
+    --critical: #d03b3b;
+    --neutral: #9a988f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5;
+      --series-1-soft: #184f95;
+      --good: #0ca30c;
+      --warning: #fab219;
+      --critical: #e66767;
+      --neutral: #6b6a63;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 20px 80px; }
+  header.app-header {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+    gap: 12px; margin-bottom: 18px;
+  }
+  header.app-header h1 { font-size: 20px; margin: 0; }
+  .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  button {
+    font-family: inherit; font-size: 13px; cursor: pointer;
+    border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-1); color: var(--text-primary);
+    padding: 7px 12px; transition: filter .1s;
+  }
+  button:hover { filter: brightness(1.08); }
+  button.primary { background: var(--series-1); color: #fff; border-color: transparent; }
+  button.danger { color: var(--critical); }
+  button.small { padding: 4px 8px; font-size: 12px; }
+  nav.tabs {
+    display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--grid);
+    margin-bottom: 18px; padding-bottom: 0;
+  }
+  nav.tabs button {
+    background: transparent; border: none; border-bottom: 2px solid transparent;
+    border-radius: 0; padding: 10px 14px; color: var(--text-secondary); font-weight: 500;
+  }
+  nav.tabs button.active { color: var(--text-primary); border-bottom-color: var(--series-1); }
+  nav.subtabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  nav.subtabs button { padding: 6px 12px; }
+  nav.subtabs button.active { background: var(--series-1); color: #fff; border-color: transparent; }
+  section.tab-panel { display: none; }
+  section.tab-panel.active { display: block; }
+  .card {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 15px; margin: 0 0 12px; }
+  .card h3 { font-size: 13px; margin: 0 0 10px; color: var(--text-secondary); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px;
+       text-transform: uppercase; letter-spacing: .03em; padding: 6px 6px; border-bottom: 1px solid var(--grid); }
+  td { padding: 4px 6px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+  tbody tr:hover { background: rgba(128,128,128,0.06); }
+  table input, table select {
+    width: 100%; border: 1px solid transparent; background: transparent; color: var(--text-primary);
+    font-family: inherit; font-size: 13px; padding: 5px 6px; border-radius: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  table input:hover, table select:hover { border-color: var(--border); }
+  table input:focus, table select:focus { outline: none; border-color: var(--series-1); background: var(--page); }
+  table input[type=number] { text-align: right; }
+  .col-narrow { width: 60px; }
+  .col-med { width: 110px; }
+  .table-scroll { overflow-x: auto; }
+  .add-row-btn { margin-top: 10px; }
+  .badge {
+    display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  }
+  .badge-good { background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--good); }
+  .badge-critical { background: color-mix(in srgb, var(--critical) 16%, transparent); color: var(--critical); }
+  .badge-warning { background: color-mix(in srgb, var(--warning) 20%, transparent); color: var(--warning); }
+  .badge-neutral { background: color-mix(in srgb, var(--neutral) 20%, transparent); color: var(--text-secondary); }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .stat-tile {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px;
+  }
+  .stat-tile .label { color: var(--text-secondary); font-size: 12px; margin-bottom: 4px; }
+  .stat-tile .value { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat-tile .sub { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 800px) { .charts-grid { grid-template-columns: 1fr; } }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
+  .legend .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
+  .stacked-bar { display: flex; gap: 2px; height: 30px; width: 100%; }
+  .stacked-seg { border-radius: 4px; min-width: 3px; display: flex; align-items: center; justify-content: center;
+                 color: #fff; font-size: 11px; font-weight: 700; overflow: hidden; white-space: nowrap; }
+  .hbar-row { display: grid; grid-template-columns: 130px 1fr 34px; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+  .hbar-track { background: var(--grid); border-radius: 4px; height: 14px; position: relative; }
+  .hbar-fill { background: var(--series-1); border-radius: 4px; height: 14px; }
+  .hbar-value { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+  .month-card { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+  .month-card h4 { margin: 0 0 10px; font-size: 14px; }
+  .month-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 10px; margin-bottom: 10px; }
+  .field-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 3px; }
+  .field-input { width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border);
+                 background: var(--page); color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .month-summary { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--grid); font-size: 12px; }
+  .month-summary b { font-variant-numeric: tabular-nums; }
+  .saldo-positive { color: var(--good); }
+  .saldo-negative { color: var(--critical); }
+  select.month-picker { padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); margin-bottom: 14px; }
+  footer.note { color: var(--muted); font-size: 12px; text-align: center; margin-top: 24px; }
+  .empty-hint { color: var(--muted); font-size: 12px; padding: 10px 0; }
+  #importFile { display: none; }
+</style>
+
+<div class="wrap">
+  <header class="app-header">
+    <h1>⚽ Gestão Time Trairagem 2026</h1>
+    <div class="header-actions">
+      <span class="small" id="syncStatus" style="align-self:center;color:var(--muted);">🔄 Conectando...</span>
+      <button class="small" id="btnExport">⬇ Exportar backup</button>
+      <button class="small" id="btnImport">⬆ Importar backup</button>
+      <input type="file" id="importFile" accept="application/json">
+      <button class="small danger" id="btnReset">↺ Restaurar dados originais</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="mainTabs">
+    <button data-tab="dashboard" class="active">Dashboard</button>
+    <button data-tab="jogadores">Jogadores</button>
+    <button data-tab="resultados">Resultados</button>
+    <button data-tab="proximos">Próximos Jogos</button>
+    <button data-tab="estatisticas">Estatísticas</button>
+    <button data-tab="financeiro">Financeiro</button>
+  </nav>
+
+  <section class="tab-panel active" id="tab-dashboard"></section>
+  <section class="tab-panel" id="tab-jogadores"></section>
+  <section class="tab-panel" id="tab-resultados"></section>
+  <section class="tab-panel" id="tab-proximos"></section>
+  <section class="tab-panel" id="tab-estatisticas"></section>
+  <section class="tab-panel" id="tab-financeiro">
+    <nav class="subtabs" id="finSubtabs">
+      <button data-sub="mensalidades" class="active">Mensalidades</button>
+      <button data-sub="caixa">Caixa Mensal</button>
+      <button data-sub="despesas">Despesas Gerais</button>
+    </nav>
+    <div id="fin-mensalidades"></div>
+    <div id="fin-caixa" style="display:none"></div>
+    <div id="fin-despesas" style="display:none"></div>
+  </section>
+
+  <footer class="note">Dados sincronizados na nuvem (Firebase) e compartilhados com todo o time em tempo real. Use "Exportar backup" de vez em quando para guardar uma cópia do arquivo em disco.</footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script>
+/* ============================= SEED DATA ============================= */
+const SEED = {
+  players: [
+    {name:"Adailton Thomaz", position:"Atacante", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Alan Kardek da S Pereira", position:"Lateral", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Alecsandro Campos G", position:"", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Andre Gustavo Anuvale A", position:"", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Carlos Alberto de Assis", position:"", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Carlos Gustavo Rogerio da Silva (Chiquinho)", position:"Zagueiro", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Cleber Aparecido Barbosa Julião (Binho)", position:"Atacante", games:0, goals:1, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Douglas Rodrigues Teodoro", position:"Meio-Campo", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Edelcio Jose Brilha da Silva", position:"Meio-Campo", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Fabio Oliveira Allipio", position:"", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Fernando Galrão", position:"Goleiro", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Gabriel Oliveira Soares", position:"", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Jeferson Fracalossi", position:"", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"João Gabriel da S Leite", position:"Volante", games:0, goals:2, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Kaic Silva Oliveira", position:"Atacante", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:"Retornou"},
+    {name:"Lucas Gabriel de Sousa", position:"", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Matheus Assunção", position:"", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Pedro Rogerio da Silva", position:"", games:0, goals:2, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Rafael Duarte de Jesus", position:"Lateral", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Renato Ladeia Pelegrino", position:"Atacante", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Roberto Gomes do Santos", position:"Meio-Campo", games:0, goals:2, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""},
+    {name:"Smith Ribeiro Novais Junior", position:"Meio-Campo", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:false, obs:"avastado"},
+    {name:"Vinicius Honda Ladeia de Sousa", position:"Atacante", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:false, obs:""}
+  ],
+  results: [
+    {date:"2025-05-17", opponent:"Fim da Linha", status:"confirmado", goalsFor:4, goalsAgainst:1, scorers:"", highlights:0, obs:"jogo facil"},
+    {date:"2025-05-24", opponent:"Fim da Rua", status:"confirmado", goalsFor:3, goalsAgainst:5, scorers:"", highlights:0, obs:"Jogo difícil"},
+    {date:"2025-05-31", opponent:"Bola Branca", status:"confirmado", goalsFor:1, goalsAgainst:3, scorers:"", highlights:0, obs:"Jogo difícil"},
+    {date:"2025-06-07", opponent:"?", status:"cancelado", goalsFor:null, goalsAgainst:null, scorers:"", highlights:0, obs:"cancelado"},
+    {date:"2025-06-14", opponent:"Garoa FC", status:"confirmado", goalsFor:1, goalsAgainst:0, scorers:"Renato", highlights:0, obs:"jogo facil"},
+    {date:"2025-06-21", opponent:"Leões da Norte", status:"confirmado", goalsFor:1, goalsAgainst:0, scorers:"Gabriel", highlights:1, obs:"jogo medio"},
+    {date:"2025-06-28", opponent:"Caceia", status:"cancelado", goalsFor:null, goalsAgainst:null, scorers:"", highlights:0, obs:"cancelado"},
+    {date:"2025-07-05", opponent:"Caceia", status:"confirmado", goalsFor:2, goalsAgainst:0, scorers:"Renato/Duzinho", highlights:0, obs:"Jogo difícil"},
+    {date:"2025-07-12", opponent:"Gremio do Mato Dentro", status:"confirmado", goalsFor:2, goalsAgainst:6, scorers:"Andre/?", highlights:0, obs:"Jogo difícil"},
+    {date:"2025-07-19", opponent:"Si Perder Nois Num Liga", status:"confirmado", goalsFor:2, goalsAgainst:0, scorers:"", highlights:1, obs:"Jogo difícil"},
+    {date:"2025-07-26", opponent:"Real Oppeano", status:"confirmado", goalsFor:2, goalsAgainst:1, scorers:"", highlights:1, obs:"Jogo difícil"},
+    {date:"2025-08-02", opponent:"13 do Arsenal Veterano", status:"pendente", goalsFor:null, goalsAgainst:null, scorers:"", highlights:0, obs:"resultado ainda não lançado"},
+    {date:"2025-08-23", opponent:"Turma do Amendoim", status:"confirmado", goalsFor:4, goalsAgainst:2, scorers:"", highlights:0, obs:""}
+  ],
+  upcoming: [
+    {date:"2025-06-21", time:"11:00", place:"Campo esporte", status:"concluido", opponent:"Leões da Norte", note:""},
+    {date:"2025-06-28", time:"11:00", place:"Campo esporte", status:"cancelado", opponent:"Caceia", note:""},
+    {date:"2025-07-05", time:"11:00", place:"Campo esporte", status:"concluido", opponent:"Caceia", note:""},
+    {date:"2025-07-12", time:"11:00", place:"Campo esporte", status:"concluido", opponent:"Gremio do Mato Dentro", note:""},
+    {date:"2025-07-19", time:"11:00", place:"Campo esporte", status:"concluido", opponent:"Si Perder Nois Num Liga", note:""},
+    {date:"2025-07-26", time:"11:00", place:"Campo esporte", status:"concluido", opponent:"Real Oppeano", note:""},
+    {date:"2025-08-02", time:"11:00", place:"Campo esporte", status:"concluido", opponent:"13 do Arsenal Veterano", note:""},
+    {date:"2025-08-09", time:"11:00", place:"Campo esporte", status:"concluido", opponent:"Caceia", note:""},
+    {date:"2025-08-16", time:"11:00", place:"Campo esporte", status:"concluido", opponent:"Milocho", note:""},
+    {date:"2025-08-23", time:"11:00", place:"Campo esporte", status:"concluido", opponent:"Turma do Amendoim", note:""},
+    {date:"2025-08-30", time:"11:00", place:"Campo esporte", status:"concluido", opponent:"Paulistano", note:""},
+    {date:"2025-09-06", time:"11:00", place:"Campo esporte", status:"concluido", opponent:"Miloche", note:""},
+    {date:"2025-09-13", time:"11:00", place:"Campo esporte", status:"concluido", opponent:"União Caieiras", note:""},
+    {date:"2025-09-20", time:"11:00", place:"Campo esporte", status:"concluido", opponent:"Fim da Rua", note:""},
+    {date:"2025-09-27", time:"11:00", place:"Campo esporte", status:"concluido", opponent:"Turma do Amendoim", note:""},
+    {date:"2025-10-04", time:"11:00", place:"Campo esporte", status:"concluido", opponent:"Time Arsenal", note:""},
+    {date:"2025-10-11", time:"11:00", place:"Campo esporte", status:"confirmado", opponent:"Esporte Clube Terra Preta", note:""},
+    {date:"2025-10-18", time:"11:00", place:"Campo esporte", status:"cancelado", opponent:"Lendarios/Thiaguinho", note:""},
+    {date:"2025-10-25", time:"11:00", place:"Campo esporte", status:"livre", opponent:"", note:""},
+    {date:"2025-11-01", time:"11:00", place:"Campo esporte", status:"livre", opponent:"", note:""},
+    {date:"2025-11-08", time:"11:00", place:"Campo esporte", status:"livre", opponent:"", note:""},
+    {date:"2025-11-15", time:"11:00", place:"Campo esporte", status:"livre", opponent:"", note:""},
+    {date:"2025-11-29", time:"11:00", place:"Campo esporte", status:"livre", opponent:"", note:""}
+  ],
+  expenseCategories: [
+    {category:"Aluguel de campo", value:0},
+    {category:"Uniformes e equipamentos", value:0},
+    {category:"Árbitro", value:120},
+    {category:"Transporte", value:0},
+    {category:"Outras despesas", value:10}
+  ],
+  months: [
+    {id:"mar", label:"Março", caixaAnterior:0, pago:207, aReceber:260, totalReceita:467,
+      items:[{desc:"Arbitragem (Edinho)", value:100}]},
+    {id:"abr", label:"Abril", caixaAnterior:107, pago:160, aReceber:240, totalReceita:400,
+      items:[{desc:"Arbitragem (Edinho)", value:50}]},
+    {id:"ago", label:"Agosto", caixaAnterior:217, pago:295, aReceber:145, totalReceita:512,
+      items:[{desc:"Árbitro 02/08/2025", value:80},{desc:"Árbitro 09/08/2025", value:80},
+              {desc:"Árbitro 16/08/2025", value:40},{desc:"Árbitro 23/08/2025", value:40},
+              {desc:"Árbitro 30/08/2025", value:80}]},
+    {id:"set", label:"Setembro", caixaAnterior:192, pago:250, aReceber:215, totalReceita:442,
+      items:[{desc:"Árbitro 06/09/2025", value:80},{desc:"Árbitro 13/09/2025", value:80},
+              {desc:"Árbitro 20/09/2025", value:80},{desc:"Árbitro 27/09/2025", value:80}]},
+    {id:"out", label:"Outubro", caixaAnterior:122, pago:300, aReceber:190, totalReceita:422,
+      items:[{desc:"Arbitragem", value:80},{desc:"Arbitragem", value:80},{desc:"Arbitragem", value:80}]},
+    {id:"nov", label:"Novembro", caixaAnterior:281, pago:100, aReceber:390, totalReceita:381,
+      items:[{desc:"Arbitragem", value:80},{desc:"Arbitragem", value:80}]},
+    {id:"dez", label:"Dezembro", caixaAnterior:221, pago:125, aReceber:365, totalReceita:346,
+      items:[{desc:"Itens esportivo", value:1084.44}]}
+  ],
+  dues: {
+    mar: [
+      {player:"Alan Kardek da S Pereira", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Alecsandro Campos G", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Andre Gustavo Anuvale A", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Carlos Alberto de Assis", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Carlos Gustavo Rogerio da Silva (Chiquinho)", paidDate:null, value:15, status:"pendente", note:""},
+      {player:"Cleber Aparecido Barbosa Julião (Binho)", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Douglas Rodrigues Teodoro", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Edelcio Jose Brilha da Silva", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Fabio Oliveira Allipio", paidDate:null, value:20, status:"pendente", note:""},
+      {player:"Fernando Galrão", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Jeferson Fracalossi", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Kaic Silva Oliveira", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Lucas Gabriel de Sousa", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Matheus Assunção", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Pedro Rogerio da Silva", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Rafael Duarte de Jesus", paidDate:null, value:7, status:"pago", note:""},
+      {player:"Everton Henrique (TOM)", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Renato Ladeia Pelegrino", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Roberto Gomes do Santos", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Joao Gabriel", paidDate:null, value:25, status:"pago", note:""}
+    ],
+    abr: [
+      {player:"Alan Kardek da S Pereira", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Alecsandro Campos G", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Andre Gustavo Anuvale A", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Carlos Alberto de Assis", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Carlos Gustavo Rogerio da Silva (Chiquinho)", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Cleber Aparecido Barbosa Julião (Binho)", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Douglas Rodrigues Teodoro", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Roberto Gomes do Santos", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Edelcio Jose Brilha da Silva", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Fabio Oliveira Allipio", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Jeferson Fracalossi", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Kaic Silva Oliveira", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Lucas Gabriel de Sousa", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Matheus Assunção", paidDate:null, value:15, status:"pendente", note:""},
+      {player:"Renato Ladeia Pelegrino", paidDate:null, value:10, status:"pago", note:"falta R$15,00"},
+      {player:"Rafael Duarte de Jesus", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Joao Gabriel", paidDate:null, value:25, status:"pendente", note:""}
+    ],
+    ago: [
+      {player:"Alan Kardek da S Pereira", paidDate:"2025-08-15", value:25, status:"pago", note:""},
+      {player:"Alecsandro Campos G", paidDate:"2025-08-06", value:25, status:"pago", note:""},
+      {player:"Andre Gustavo Anuvale A", paidDate:"2025-08-20", value:25, status:"pago", note:""},
+      {player:"Carlos Alberto de Assis", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Carlos Gustavo Rogerio da Silva (Chiquinho)", paidDate:"2025-08-30", value:20, status:"pago", note:""},
+      {player:"Cleber Aparecido Barbosa Julião (Binho)", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Douglas Rodrigues Teodoro", paidDate:"2025-08-06", value:25, status:"pago", note:""},
+      {player:"Tom cunhado Alan", paidDate:"2025-08-15", value:10, status:"pago", note:""},
+      {player:"Duzinho (filho do Du)", paidDate:null, value:20, status:"pendente", note:""},
+      {player:"Edelcio Jose Brilha da Silva", paidDate:"2025-08-23", value:25, status:"pago", note:""},
+      {player:"Fabio Oliveira Allipio", paidDate:"2025-08-20", value:25, status:"pago", note:""},
+      {player:"João Gabriel da S Leite", paidDate:"2025-08-20", value:25, status:"pago", note:""},
+      {player:"Kaic Silva Oliveira", paidDate:"2025-08-20", value:25, status:"pago", note:""},
+      {player:"Vinicius Honda Ladeia de Sousa", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Matheus Assunção", paidDate:"2025-08-15", value:15, status:"pago", note:""},
+      {player:"Pedro Rogerio da Silva", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Rafael Duarte de Jesus", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Renato Ladeia Pelegrino", paidDate:"2025-08-23", value:25, status:"pago", note:""},
+      {player:"Roberto Gomes do Santos", paidDate:"2025-08-08", value:25, status:"pago", note:""}
+    ],
+    set: [
+      {player:"Alan Kardek da S Pereira", paidDate:"2025-10-20", value:25, status:"pago", note:""},
+      {player:"Alecsandro Campos G", paidDate:"2025-09-05", value:25, status:"pago", note:""},
+      {player:"Andre Gustavo Anuvale A", paidDate:"2025-09-11", value:25, status:"pago", note:""},
+      {player:"Carlos Alberto de Assis", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Carlos Gustavo Rogerio da Silva (Chiquinho)", paidDate:null, value:20, status:"pendente", note:""},
+      {player:"Cleber Aparecido Barbosa Julião (Binho)", paidDate:"2025-09-02", value:25, status:"pago", note:""},
+      {player:"Douglas Rodrigues Teodoro", paidDate:"2025-09-02", value:25, status:"pago", note:""},
+      {player:"Tom cunhado Alan", paidDate:"2025-10-20", value:15, status:"pago", note:""},
+      {player:"Duzinho (filho do Du)", paidDate:null, value:20, status:"pendente", note:""},
+      {player:"Edelcio Jose Brilha da Silva", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Fabio Oliveira Allipio", paidDate:"2025-09-10", value:25, status:"pendente", note:""},
+      {player:"João Gabriel da S Leite", paidDate:"2025-09-02", value:25, status:"pago", note:""},
+      {player:"Kaic Silva Oliveira", paidDate:"2025-09-10", value:25, status:"pago", note:""},
+      {player:"Vinicius Honda Ladeia de Sousa", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Matheus Assunção", paidDate:"2025-10-20", value:10, status:"pago", note:""},
+      {player:"Pedro Rogerio da Silva", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Jorge Antonio F", paidDate:"2025-09-05", value:25, status:"pago", note:""},
+      {player:"Rafael Duarte de Jesus", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Renato Ladeia Pelegrino", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Roberto Gomes do Santos", paidDate:null, value:25, status:"pendente", note:""}
+    ],
+    out: [
+      {player:"Alan Kardek da S Pereira", paidDate:"2025-10-20", value:25, status:"pago", note:""},
+      {player:"Alecsandro Campos G", paidDate:"2025-10-06", value:25, status:"pago", note:""},
+      {player:"Andre Gustavo Anuvale A", paidDate:"2025-10-20", value:25, status:"pago", note:""},
+      {player:"Carlos Alberto de Assis", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Carlos Gustavo Rogerio da Silva (Chiquinho)", paidDate:null, value:20, status:"pendente", note:""},
+      {player:"Cleber Aparecido Barbosa Julião (Binho)", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Douglas Rodrigues Teodoro", paidDate:"2025-10-07", value:25, status:"pago", note:""},
+      {player:"Everton Henrique (TOM)", paidDate:"2025-10-20", value:15, status:"pago", note:""},
+      {player:"Lucas Gabriel de Sousa", paidDate:null, value:20, status:"pendente", note:""},
+      {player:"Edelcio Jose Brilha da Silva", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Fabio Oliveira Allipio", paidDate:"2025-10-20", value:25, status:"pago", note:""},
+      {player:"João Gabriel da S Leite", paidDate:"2025-10-07", value:25, status:"pago", note:""},
+      {player:"Kaic Silva Oliveira", paidDate:"2025-10-20", value:25, status:"pago", note:""},
+      {player:"Vinicius Honda Ladeia de Sousa", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Matheus Assunção", paidDate:"2025-10-20", value:10, status:"pago", note:""},
+      {player:"Pedro Rogerio da Silva", paidDate:"2025-10-20", value:25, status:"pago", note:""},
+      {player:"Jorge Antonio F", paidDate:"2025-10-10", value:25, status:"pago", note:""}
+    ],
+    nov: [
+      {player:"Alan Kardek da S Pereira", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Alecsandro Campos G", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Andre Gustavo Anuvale A", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Carlos Alberto de Assis", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Carlos Gustavo Rogerio da Silva (Chiquinho)", paidDate:null, value:20, status:"pendente", note:""},
+      {player:"Cleber Aparecido Barbosa Julião (Binho)", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Douglas Rodrigues Teodoro", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Everton Henrique (TOM)", paidDate:null, value:15, status:"pago", note:""},
+      {player:"Lucas Gabriel de Sousa", paidDate:null, value:20, status:"pendente", note:""},
+      {player:"Edelcio Jose Brilha da Silva", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Fabio Oliveira Allipio", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"João Gabriel da S Leite", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Kaic Silva Oliveira", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Vinicius Honda Ladeia de Sousa", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Matheus Assunção", paidDate:null, value:10, status:"pago", note:""},
+      {player:"Pedro Rogerio da Silva", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Jorge Antonio F", paidDate:null, value:25, status:"pendente", note:""}
+    ],
+    dez: [
+      {player:"Alan Kardek da S Pereira", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Alecsandro Campos G", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Andre Gustavo Anuvale A", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Carlos Alberto de Assis", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Carlos Gustavo Rogerio da Silva (Chiquinho)", paidDate:null, value:20, status:"pendente", note:""},
+      {player:"Cleber Aparecido Barbosa Julião (Binho)", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Douglas Rodrigues Teodoro", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Everton Henrique (TOM)", paidDate:null, value:15, status:"pago", note:""},
+      {player:"Lucas Gabriel de Sousa", paidDate:null, value:20, status:"pendente", note:""},
+      {player:"Edelcio Jose Brilha da Silva", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Fabio Oliveira Allipio", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"João Gabriel da S Leite", paidDate:null, value:25, status:"pago", note:""},
+      {player:"Kaic Silva Oliveira", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Vinicius Honda Ladeia de Sousa", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Matheus Assunção", paidDate:null, value:10, status:"pago", note:""},
+      {player:"Pedro Rogerio da Silva", paidDate:null, value:25, status:"pendente", note:""},
+      {player:"Jorge Antonio F", paidDate:null, value:25, status:"pendente", note:""}
+    ]
+  }
+};
+
+/* ============================= STATE ============================= */
+const STORAGE_KEY = "trairagem2026:data:v1";
+let state;
+function cloneSeed() { return JSON.parse(JSON.stringify(SEED)); }
+function loadState() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return cloneSeed();
+  try { return JSON.parse(raw); } catch (e) { return cloneSeed(); }
+}
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  scheduleCloudSync();
+}
+
+/* ============================= FIREBASE SYNC ============================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyAxj_FpPozPuhEIsIdyYQm1dZriSbEqie4",
+  authDomain: "trairagem-2026.firebaseapp.com",
+  projectId: "trairagem-2026",
+  storageBucket: "trairagem-2026.firebasestorage.app",
+  messagingSenderId: "987006028828",
+  appId: "1:987006028828:web:6368f0c6d1e0155cbb23d9"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const teamDocRef = db.collection("teams").doc("trairagem-2026");
+let cloudReady = false;
+let cloudSyncTimer = null;
+
+function setSyncStatus(text) {
+  const el = document.getElementById("syncStatus");
+  if (el) el.textContent = text;
+}
+
+function scheduleCloudSync() {
+  if (!cloudReady) return;
+  setSyncStatus("💾 Salvando...");
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(() => {
+    teamDocRef.set(state)
+      .then(() => setSyncStatus("✅ Sincronizado"))
+      .catch(err => { console.error("Erro ao sincronizar:", err); setSyncStatus("⚠️ Erro ao sincronizar"); });
+  }, 700);
+}
+
+function initCloudSync() {
+  auth.onAuthStateChanged(user => {
+    if (!user) return;
+    teamDocRef.onSnapshot(snap => {
+      if (snap.metadata.hasPendingWrites) { cloudReady = true; return; }
+      if (snap.exists) {
+        state = snap.data();
+      } else {
+        teamDocRef.set(state).catch(err => console.error("Erro ao inicializar dados:", err));
+      }
+      cloudReady = true;
+      setSyncStatus("✅ Sincronizado");
+      const activeTab = document.querySelector("#mainTabs button.active")?.dataset.tab || "dashboard";
+      renderTab(activeTab);
+    }, err => { console.error("Erro ao ouvir mudanças:", err); setSyncStatus("⚠️ Erro de conexão"); });
+  });
+  auth.signInAnonymously().catch(err => { console.error("Erro no login anônimo:", err); setSyncStatus("⚠️ Erro de login"); });
+}
+
+/* ============================= HELPERS ============================= */
+function money(n) {
+  const v = Number(n || 0);
+  return v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+}
+function dateBR(iso) {
+  if (!iso) return "";
+  const [y,m,d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+function esc(s) { return (s ?? "").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function el(tag, attrs, children) {
+  const e = document.createElement(tag);
+  if (attrs) for (const k in attrs) {
+    if (k === "class") e.className = attrs[k];
+    else if (k === "html") e.innerHTML = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  if (children) for (const c of [].concat(children)) if (c) e.appendChild(c);
+  return e;
+}
+function fieldInput(type, value, onChange, opts) {
+  opts = opts || {};
+  const i = document.createElement("input");
+  i.type = type;
+  if (type === "checkbox") i.checked = !!value;
+  else i.value = value ?? "";
+  if (opts.step) i.step = opts.step;
+  if (opts.placeholder) i.placeholder = opts.placeholder;
+  i.addEventListener("input", () => {
+    let v = type === "number" ? (i.value === "" ? null : parseFloat(i.value)) : i.value;
+    if (type === "checkbox") v = i.checked;
+    onChange(v);
+    saveState();
+  });
+  return i;
+}
+function fieldSelect(options, value, onChange) {
+  const s = document.createElement("select");
+  for (const opt of options) {
+    const o = document.createElement("option");
+    o.value = opt.value; o.textContent = opt.label;
+    if (opt.value === value) o.selected = true;
+    s.appendChild(o);
+  }
+  s.addEventListener("change", () => { onChange(s.value); saveState(); });
+  return s;
+}
+function outcomeOf(r) {
+  if (r.status === "cancelado") return {label:"Cancelado", cls:"badge-neutral"};
+  if (r.status === "pendente" || r.goalsFor == null || r.goalsAgainst == null) return {label:"Pendente", cls:"badge-warning"};
+  if (r.goalsFor > r.goalsAgainst) return {label:"Vitória", cls:"badge-good"};
+  if (r.goalsFor < r.goalsAgainst) return {label:"Derrota", cls:"badge-critical"};
+  return {label:"Empate", cls:"badge-warning"};
+}
+
+/* ============================= NAV ============================= */
+function initTabs() {
+  const tabs = document.querySelectorAll("#mainTabs button");
+  tabs.forEach(btn => btn.addEventListener("click", () => {
+    tabs.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+    renderTab(btn.dataset.tab);
+  }));
+  const subtabs = document.querySelectorAll("#finSubtabs button");
+  subtabs.forEach(btn => btn.addEventListener("click", () => {
+    subtabs.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("fin-mensalidades").style.display = btn.dataset.sub === "mensalidades" ? "" : "none";
+    document.getElementById("fin-caixa").style.display = btn.dataset.sub === "caixa" ? "" : "none";
+    document.getElementById("fin-despesas").style.display = btn.dataset.sub === "despesas" ? "" : "none";
+    renderFinanceiro(btn.dataset.sub);
+  }));
+}
+function renderTab(name) {
+  if (name === "dashboard") renderDashboard();
+  else if (name === "jogadores") renderJogadores();
+  else if (name === "resultados") renderResultados();
+  else if (name === "proximos") renderProximos();
+  else if (name === "estatisticas") renderEstatisticas();
+  else if (name === "financeiro") renderFinanceiro("mensalidades");
+}
+
+/* ============================= JOGADORES ============================= */
+function renderJogadores() {
+  const root = document.getElementById("tab-jogadores");
+  root.innerHTML = "";
+  const card = el("div", {class:"card"});
+  card.appendChild(el("h2", {}, document.createTextNode("Jogadores")));
+  const wrap = el("div", {class:"table-scroll"});
+  const table = el("table");
+  table.innerHTML = `<thead><tr>
+    <th>Nome</th><th>Posição</th><th class="col-narrow">Jogos</th><th class="col-narrow">Gols</th>
+    <th class="col-narrow">Assist.</th><th class="col-narrow">Faltas</th><th class="col-narrow">Am.</th>
+    <th class="col-narrow">Verm.</th><th class="col-med">Treinos</th><th>Observações</th><th></th>
+  </tr></thead>`;
+  const tbody = el("tbody");
+  state.players.forEach((p, idx) => {
+    const tr = el("tr");
+    tr.appendChild(el("td", {}, fieldInput("text", p.name, v => p.name = v)));
+    tr.appendChild(el("td", {}, fieldInput("text", p.position, v => p.position = v, {placeholder:"ex: Atacante"})));
+    tr.appendChild(el("td", {}, fieldInput("number", p.games, v => p.games = v)));
+    tr.appendChild(el("td", {}, fieldInput("number", p.goals, v => p.goals = v)));
+    tr.appendChild(el("td", {}, fieldInput("number", p.assists, v => p.assists = v)));
+    tr.appendChild(el("td", {}, fieldInput("number", p.fouls, v => p.fouls = v)));
+    tr.appendChild(el("td", {}, fieldInput("number", p.yellow, v => p.yellow = v)));
+    tr.appendChild(el("td", {}, fieldInput("number", p.red, v => p.red = v)));
+    tr.appendChild(el("td", {}, fieldSelect([{value:"true",label:"Sim"},{value:"false",label:"Não"}], String(p.training), v => p.training = v === "true")));
+    tr.appendChild(el("td", {}, fieldInput("text", p.obs, v => p.obs = v)));
+    const delBtn = el("button", {class:"small danger"}, document.createTextNode("✕"));
+    delBtn.addEventListener("click", () => { state.players.splice(idx,1); saveState(); renderJogadores(); });
+    tr.appendChild(el("td", {}, delBtn));
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  card.appendChild(wrap);
+  const addBtn = el("button", {class:"add-row-btn primary"}, document.createTextNode("+ Adicionar jogador"));
+  addBtn.addEventListener("click", () => {
+    state.players.push({name:"", position:"", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""});
+    saveState(); renderJogadores();
+  });
+  card.appendChild(addBtn);
+  root.appendChild(card);
+
+  const posCounts = {};
+  state.players.forEach(p => { const k = p.position || "Sem posição"; posCounts[k] = (posCounts[k]||0)+1; });
+  const posCard = el("div", {class:"card"});
+  posCard.appendChild(el("h3", {}, document.createTextNode("Jogadores por posição")));
+  posCard.appendChild(horizontalBarChart(Object.entries(posCounts).map(([label,value]) => ({label,value})).sort((a,b)=>b.value-a.value)));
+  root.appendChild(posCard);
+}
+
+/* ============================= RESULTADOS ============================= */
+function renderResultados() {
+  const root = document.getElementById("tab-resultados");
+  root.innerHTML = "";
+  const card = el("div", {class:"card"});
+  card.appendChild(el("h2", {}, document.createTextNode("Resultados")));
+  const wrap = el("div", {class:"table-scroll"});
+  const table = el("table");
+  table.innerHTML = `<thead><tr>
+    <th class="col-med">Data</th><th>Adversário</th><th class="col-med">Status</th>
+    <th class="col-narrow">Gols time</th><th class="col-narrow">Gols sofridos</th>
+    <th>Goleadores</th><th>Observações</th><th class="col-med">Resultado</th><th></th>
+  </tr></thead>`;
+  const tbody = el("tbody");
+  state.results.forEach((r, idx) => {
+    const tr = el("tr");
+    tr.appendChild(el("td", {}, fieldInput("date", r.date, v => r.date = v)));
+    tr.appendChild(el("td", {}, fieldInput("text", r.opponent, v => r.opponent = v)));
+    tr.appendChild(el("td", {}, fieldSelect([
+      {value:"confirmado", label:"Confirmado"},
+      {value:"cancelado", label:"Cancelado"},
+      {value:"pendente", label:"Pendente"}
+    ], r.status, v => { r.status = v; renderResultados(); })));
+    tr.appendChild(el("td", {}, fieldInput("number", r.goalsFor, v => { r.goalsFor = v; badgeCell.textContent=""; updateBadge(); })));
+    tr.appendChild(el("td", {}, fieldInput("number", r.goalsAgainst, v => { r.goalsAgainst = v; updateBadge(); })));
+    tr.appendChild(el("td", {}, fieldInput("text", r.scorers, v => r.scorers = v)));
+    tr.appendChild(el("td", {}, fieldInput("text", r.obs, v => r.obs = v)));
+    const badgeCell = el("td");
+    function updateBadge() {
+      const o = outcomeOf(r);
+      badgeCell.innerHTML = "";
+      badgeCell.appendChild(el("span", {class:"badge " + o.cls}, document.createTextNode(o.label)));
+    }
+    updateBadge();
+    tr.appendChild(badgeCell);
+    const delBtn = el("button", {class:"small danger"}, document.createTextNode("✕"));
+    delBtn.addEventListener("click", () => { state.results.splice(idx,1); saveState(); renderResultados(); });
+    tr.appendChild(el("td", {}, delBtn));
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  card.appendChild(wrap);
+  const addBtn = el("button", {class:"add-row-btn primary"}, document.createTextNode("+ Adicionar jogo"));
+  addBtn.addEventListener("click", () => {
+    state.results.push({date:"", opponent:"", status:"confirmado", goalsFor:null, goalsAgainst:null, scorers:"", highlights:0, obs:""});
+    saveState(); renderResultados();
+  });
+  card.appendChild(addBtn);
+  root.appendChild(card);
+}
+
+/* ============================= PRÓXIMOS JOGOS ============================= */
+function renderProximos() {
+  const root = document.getElementById("tab-proximos");
+  root.innerHTML = "";
+  const card = el("div", {class:"card"});
+  card.appendChild(el("h2", {}, document.createTextNode("Próximos Jogos")));
+  const wrap = el("div", {class:"table-scroll"});
+  const table = el("table");
+  table.innerHTML = `<thead><tr>
+    <th class="col-med">Data</th><th class="col-narrow">Hora</th><th>Local</th>
+    <th class="col-med">Status</th><th>Adversário</th><th>Obs.</th><th></th>
+  </tr></thead>`;
+  const tbody = el("tbody");
+  state.upcoming.forEach((u, idx) => {
+    const tr = el("tr");
+    tr.appendChild(el("td", {}, fieldInput("date", u.date, v => u.date = v)));
+    tr.appendChild(el("td", {}, fieldInput("time", u.time, v => u.time = v)));
+    tr.appendChild(el("td", {}, fieldInput("text", u.place, v => u.place = v)));
+    tr.appendChild(el("td", {}, fieldSelect([
+      {value:"livre", label:"Livre"},
+      {value:"confirmado", label:"Confirmado"},
+      {value:"concluido", label:"Concluído"},
+      {value:"cancelado", label:"Cancelado"}
+    ], u.status, v => u.status = v)));
+    tr.appendChild(el("td", {}, fieldInput("text", u.opponent, v => u.opponent = v)));
+    tr.appendChild(el("td", {}, fieldInput("text", u.note, v => u.note = v)));
+    const delBtn = el("button", {class:"small danger"}, document.createTextNode("✕"));
+    delBtn.addEventListener("click", () => { state.upcoming.splice(idx,1); saveState(); renderProximos(); });
+    tr.appendChild(el("td", {}, delBtn));
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  card.appendChild(wrap);
+  const addBtn = el("button", {class:"add-row-btn primary"}, document.createTextNode("+ Adicionar jogo"));
+  addBtn.addEventListener("click", () => {
+    state.upcoming.push({date:"", time:"11:00", place:"Campo esporte", status:"livre", opponent:"", note:""});
+    saveState(); renderProximos();
+  });
+  card.appendChild(addBtn);
+  root.appendChild(card);
+}
+
+/* ============================= ESTATÍSTICAS ============================= */
+function computeStats() {
+  const rs = state.results;
+  const played = rs.filter(r => r.status === "confirmado" && r.goalsFor != null && r.goalsAgainst != null);
+  const vitorias = played.filter(r => r.goalsFor > r.goalsAgainst).length;
+  const derrotas = played.filter(r => r.goalsFor < r.goalsAgainst).length;
+  const empates = played.filter(r => r.goalsFor === r.goalsAgainst).length;
+  const cancelados = rs.filter(r => r.status === "cancelado").length;
+  const pendentes = rs.filter(r => r.status === "pendente").length;
+  const golsMarcados = played.reduce((s,r) => s + r.goalsFor, 0);
+  const golsSofridos = played.reduce((s,r) => s + r.goalsAgainst, 0);
+  const mediaGols = played.length ? golsMarcados / played.length : 0;
+  const pctVitorias = played.length ? vitorias / played.length : 0;
+  return {played: played.length, vitorias, derrotas, empates, cancelados, pendentes, golsMarcados, golsSofridos, mediaGols, pctVitorias};
+}
+function renderEstatisticas() {
+  const root = document.getElementById("tab-estatisticas");
+  root.innerHTML = "";
+  const s = computeStats();
+  const card = el("div", {class:"card"});
+  card.appendChild(el("h2", {}, document.createTextNode("Estatísticas (calculado a partir de Resultados)")));
+  const table = el("table");
+  const rows = [
+    ["Total de jogos realizados", s.played],
+    ["Total de gols marcados", s.golsMarcados],
+    ["Total de gols sofridos", s.golsSofridos],
+    ["Total de jogos cancelados", s.cancelados],
+    ["Total de jogos pendentes", s.pendentes],
+    ["Total de vitórias", s.vitorias],
+    ["Total de empates", s.empates],
+    ["Total de derrotas", s.derrotas],
+    ["Média de gols por jogo", s.mediaGols.toFixed(2)],
+    ["Porcentagem de vitórias", (s.pctVitorias*100).toFixed(1) + "%"]
+  ];
+  const tbody = el("tbody");
+  rows.forEach(([label,val]) => {
+    const tr = el("tr");
+    tr.appendChild(el("td", {}, document.createTextNode(label)));
+    const td = el("td", {style:"text-align:right;font-weight:600;font-variant-numeric:tabular-nums"});
+    td.textContent = val;
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  card.appendChild(table);
+  root.appendChild(card);
+
+  const topCard = el("div", {class:"card"});
+  topCard.appendChild(el("h3", {}, document.createTextNode("Artilharia (top jogadores)")));
+  const top = [...state.players].filter(p=>p.goals>0).sort((a,b)=>b.goals-a.goals).slice(0,8);
+  if (!top.length) topCard.appendChild(el("div", {class:"empty-hint"}, document.createTextNode("Nenhum gol registrado ainda.")));
+  else topCard.appendChild(horizontalBarChart(top.map(p=>({label:p.name, value:p.goals}))));
+  root.appendChild(topCard);
+}
+
+/* ============================= DASHBOARD ============================= */
+function renderDashboard() {
+  const root = document.getElementById("tab-dashboard");
+  root.innerHTML = "";
+  const s = computeStats();
+  const lastMonth = state.months[state.months.length - 1];
+  const saldoAtual = lastMonth ? monthSaldo(lastMonth) : 0;
+
+  const statGrid = el("div", {class:"stat-grid"});
+  const tiles = [
+    ["Total de Jogos", s.played, ""],
+    ["Vitórias", s.vitorias, ""],
+    ["Empates", s.empates, ""],
+    ["Derrotas", s.derrotas, ""],
+    ["Gols Marcados", s.golsMarcados, ""],
+    ["Gols Sofridos", s.golsSofridos, ""],
+    ["% Vitórias", (s.pctVitorias*100).toFixed(0) + "%", ""],
+    ["Saldo em Caixa", money(saldoAtual), lastMonth ? lastMonth.label : ""]
+  ];
+  tiles.forEach(([label,val,sub]) => {
+    const tile = el("div", {class:"stat-tile"});
+    tile.appendChild(el("div", {class:"label"}, document.createTextNode(label)));
+    tile.appendChild(el("div", {class:"value"}, document.createTextNode(String(val))));
+    if (sub) tile.appendChild(el("div", {class:"sub"}, document.createTextNode(sub)));
+    statGrid.appendChild(tile);
+  });
+  root.appendChild(statGrid);
+
+  const chartsGrid = el("div", {class:"charts-grid"});
+
+  const outcomeCard = el("div", {class:"card"});
+  outcomeCard.appendChild(el("h3", {}, document.createTextNode("Resultados dos jogos")));
+  outcomeCard.appendChild(stackedStatusBar([
+    {label:"Vitórias", value:s.vitorias, color:"var(--good)"},
+    {label:"Empates", value:s.empates, color:"var(--warning)"},
+    {label:"Derrotas", value:s.derrotas, color:"var(--critical)"},
+    {label:"Cancelados", value:s.cancelados, color:"var(--neutral)"}
+  ]));
+  chartsGrid.appendChild(outcomeCard);
+
+  const saldoCard = el("div", {class:"card"});
+  saldoCard.appendChild(el("h3", {}, document.createTextNode("Evolução do saldo em caixa")));
+  const points = state.months.map(m => ({label: m.label, value: monthSaldo(m)}));
+  saldoCard.appendChild(lineChart(points));
+  chartsGrid.appendChild(saldoCard);
+
+  root.appendChild(chartsGrid);
+
+  const posCard = el("div", {class:"card"});
+  posCard.appendChild(el("h3", {}, document.createTextNode("Jogadores por posição")));
+  const posCounts = {};
+  state.players.forEach(p => { const k = p.position || "Sem posição"; posCounts[k] = (posCounts[k]||0)+1; });
+  posCard.appendChild(horizontalBarChart(Object.entries(posCounts).map(([label,value]) => ({label,value})).sort((a,b)=>b.value-a.value)));
+  root.appendChild(posCard);
+}
+
+/* ============================= FINANCEIRO ============================= */
+function monthTotalDespesas(m) { return m.items.reduce((s,i) => s + (Number(i.value)||0), 0); }
+function monthSaldo(m) { return (Number(m.caixaAnterior)||0) + (Number(m.pago)||0) - monthTotalDespesas(m); }
+
+function renderFinanceiro(sub) {
+  if (sub === "mensalidades") renderMensalidades();
+  else if (sub === "caixa") renderCaixaMensal();
+  else if (sub === "despesas") renderDespesasGerais();
+}
+
+function renderMensalidades() {
+  const root = document.getElementById("fin-mensalidades");
+  root.innerHTML = "";
+  const card = el("div", {class:"card"});
+  const picker = el("select", {class:"month-picker"});
+  state.months.forEach(m => {
+    const o = document.createElement("option");
+    o.value = m.id; o.textContent = m.label;
+    picker.appendChild(o);
+  });
+  let current = state.months[0]?.id;
+  picker.value = current;
+  card.appendChild(picker);
+  const body = el("div");
+  card.appendChild(body);
+  root.appendChild(card);
+
+  function draw() {
+    body.innerHTML = "";
+    const list = state.dues[current] || (state.dues[current] = []);
+    const table = el("table");
+    table.innerHTML = `<thead><tr><th>Jogador</th><th class="col-med">Data Pagamento</th>
+      <th class="col-narrow">Valor</th><th class="col-med">Status</th><th>Obs.</th><th></th></tr></thead>`;
+    const tbody = el("tbody");
+    let totalPago = 0, totalPendente = 0;
+    list.forEach((d, idx) => {
+      if (d.status === "pago") totalPago += Number(d.value)||0; else totalPendente += Number(d.value)||0;
+      const tr = el("tr");
+      tr.appendChild(el("td", {}, fieldInput("text", d.player, v => d.player = v)));
+      tr.appendChild(el("td", {}, fieldInput("date", d.paidDate, v => d.paidDate = v)));
+      tr.appendChild(el("td", {}, fieldInput("number", d.value, v => { d.value = v; redrawTotals(); })));
+      tr.appendChild(el("td", {}, fieldSelect([{value:"pago",label:"Pago"},{value:"pendente",label:"Pendente"}], d.status, v => { d.status = v; redrawTotals(); })));
+      tr.appendChild(el("td", {}, fieldInput("text", d.note, v => d.note = v)));
+      const delBtn = el("button", {class:"small danger"}, document.createTextNode("✕"));
+      delBtn.addEventListener("click", () => { list.splice(idx,1); saveState(); draw(); });
+      tr.appendChild(el("td", {}, delBtn));
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    const wrap = el("div", {class:"table-scroll"});
+    wrap.appendChild(table);
+    body.appendChild(wrap);
+    const addBtn = el("button", {class:"add-row-btn primary"}, document.createTextNode("+ Adicionar jogador"));
+    addBtn.addEventListener("click", () => { list.push({player:"", paidDate:null, value:25, status:"pendente", note:""}); saveState(); draw(); });
+    body.appendChild(addBtn);
+    const summary = el("div", {class:"month-summary"});
+    summary.id = "duesSummary";
+    body.appendChild(summary);
+    redrawTotals();
+    function redrawTotals() {
+      let tp = 0, tpe = 0;
+      list.forEach(d => { if (d.status === "pago") tp += Number(d.value)||0; else tpe += Number(d.value)||0; });
+      summary.innerHTML = `<span>Pago: <b>${money(tp)}</b></span><span>Pendente: <b>${money(tpe)}</b></span><span>Total: <b>${money(tp+tpe)}</b></span>`;
+      saveState();
+    }
+  }
+  picker.addEventListener("change", () => { current = picker.value; draw(); });
+  draw();
+}
+
+function renderCaixaMensal() {
+  const root = document.getElementById("fin-caixa");
+  root.innerHTML = "";
+  const card = el("div", {class:"card"});
+  card.appendChild(el("h2", {}, document.createTextNode("Caixa Mensal")));
+  state.months.forEach((m, idx) => {
+    const mc = el("div", {class:"month-card"});
+    const titleRow = el("div", {style:"display:flex;justify-content:space-between;align-items:center"});
+    const titleInput = document.createElement("input");
+    titleInput.value = m.label; titleInput.style.cssText = "font-size:14px;font-weight:600;border:none;background:transparent;color:var(--text-primary);width:auto";
+    titleInput.addEventListener("input", () => { m.label = titleInput.value; saveState(); });
+    titleRow.appendChild(titleInput);
+    const delBtn = el("button", {class:"small danger"}, document.createTextNode("✕ Remover mês"));
+    delBtn.addEventListener("click", () => { state.months.splice(idx,1); saveState(); renderCaixaMensal(); });
+    titleRow.appendChild(delBtn);
+    mc.appendChild(titleRow);
+
+    const fields = el("div", {class:"month-fields"});
+    function makeField(label, value, onChange, type) {
+      const f = el("div");
+      f.appendChild(el("div", {class:"field-label"}, document.createTextNode(label)));
+      const input = document.createElement("input");
+      input.className = "field-input"; input.type = type || "number"; input.step = "0.01";
+      input.value = value ?? "";
+      input.addEventListener("input", () => { onChange(input.value === "" ? 0 : parseFloat(input.value)); saveState(); redrawSummary(); });
+      f.appendChild(input);
+      return f;
+    }
+    fields.appendChild(makeField("Caixa mês anterior", m.caixaAnterior, v => m.caixaAnterior = v));
+    fields.appendChild(makeField("Recebido (Pago)", m.pago, v => m.pago = v));
+    fields.appendChild(makeField("A Receber", m.aReceber, v => m.aReceber = v));
+    fields.appendChild(makeField("Total de Receita", m.totalReceita, v => m.totalReceita = v));
+    mc.appendChild(fields);
+
+    mc.appendChild(el("div", {class:"field-label"}, document.createTextNode("Despesas do mês")));
+    const itemsTable = el("table");
+    const itemsBody = el("tbody");
+    m.items.forEach((it, iidx) => {
+      const tr = el("tr");
+      tr.appendChild(el("td", {}, fieldInput("text", it.desc, v => it.desc = v)));
+      tr.appendChild(el("td", {class:"col-med"}, fieldInput("number", it.value, v => { it.value = v; redrawSummary(); })));
+      const delItemBtn = el("button", {class:"small danger"}, document.createTextNode("✕"));
+      delItemBtn.addEventListener("click", () => { m.items.splice(iidx,1); saveState(); renderCaixaMensal(); });
+      tr.appendChild(el("td", {}, delItemBtn));
+      itemsBody.appendChild(tr);
+    });
+    itemsTable.appendChild(itemsBody);
+    mc.appendChild(itemsTable);
+    const addItemBtn = el("button", {class:"small"}, document.createTextNode("+ Despesa"));
+    addItemBtn.addEventListener("click", () => { m.items.push({desc:"", value:0}); saveState(); renderCaixaMensal(); });
+    mc.appendChild(addItemBtn);
+
+    const summary = el("div", {class:"month-summary"});
+    mc.appendChild(summary);
+    function redrawSummary() {
+      const totalDesp = monthTotalDespesas(m);
+      const saldo = monthSaldo(m);
+      summary.innerHTML = `<span>Total despesas: <b>${money(totalDesp)}</b></span>
+        <span>Saldo final: <b class="${saldo>=0?'saldo-positive':'saldo-negative'}">${money(saldo)}</b></span>`;
+    }
+    redrawSummary();
+    root.appendChild(mc);
+  });
+  const addMonthBtn = el("button", {class:"primary"}, document.createTextNode("+ Novo mês"));
+  addMonthBtn.addEventListener("click", () => {
+    const prev = state.months[state.months.length - 1];
+    state.months.push({id:"m" + Date.now(), label:"Novo mês", caixaAnterior: prev ? monthSaldo(prev) : 0, pago:0, aReceber:0, totalReceita:0, items:[]});
+    saveState(); renderCaixaMensal();
+  });
+  root.appendChild(addMonthBtn);
+}
+
+function renderDespesasGerais() {
+  const root = document.getElementById("fin-despesas");
+  root.innerHTML = "";
+  const card = el("div", {class:"card"});
+  card.appendChild(el("h2", {}, document.createTextNode("Despesas Gerais")));
+  const table = el("table");
+  table.innerHTML = `<thead><tr><th>Categoria</th><th class="col-med">Valor</th><th></th></tr></thead>`;
+  const tbody = el("tbody");
+  let total = 0;
+  state.expenseCategories.forEach((c, idx) => {
+    total += Number(c.value) || 0;
+    const tr = el("tr");
+    tr.appendChild(el("td", {}, fieldInput("text", c.category, v => c.category = v)));
+    tr.appendChild(el("td", {}, fieldInput("number", c.value, v => { c.value = v; renderDespesasGerais(); })));
+    const delBtn = el("button", {class:"small danger"}, document.createTextNode("✕"));
+    delBtn.addEventListener("click", () => { state.expenseCategories.splice(idx,1); saveState(); renderDespesasGerais(); });
+    tr.appendChild(el("td", {}, delBtn));
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  card.appendChild(table);
+  const addBtn = el("button", {class:"add-row-btn primary"}, document.createTextNode("+ Adicionar categoria"));
+  addBtn.addEventListener("click", () => { state.expenseCategories.push({category:"", value:0}); saveState(); renderDespesasGerais(); });
+  card.appendChild(addBtn);
+  const summary = el("div", {class:"month-summary"});
+  summary.innerHTML = `<span>Total: <b>${money(total)}</b></span>`;
+  card.appendChild(summary);
+  root.appendChild(card);
+}
+
+/* ============================= CHARTS ============================= */
+function stackedStatusBar(segments) {
+  const wrap = document.createElement("div");
+  const total = segments.reduce((s,x) => s + x.value, 0) || 1;
+  const bar = el("div", {class:"stacked-bar"});
+  segments.forEach(seg => {
+    if (seg.value <= 0) return;
+    const pct = (seg.value / total) * 100;
+    const s = el("div", {class:"stacked-seg", style:`width:${pct}%;background:${seg.color}`});
+    if (pct > 8) s.textContent = seg.value;
+    bar.appendChild(s);
+  });
+  wrap.appendChild(bar);
+  const legend = el("div", {class:"legend"});
+  segments.forEach(seg => {
+    const item = el("span");
+    item.innerHTML = `<span class="dot" style="background:${seg.color}"></span>${seg.label}: <b>${seg.value}</b>`;
+    legend.appendChild(item);
+  });
+  wrap.appendChild(legend);
+  return wrap;
+}
+
+function horizontalBarChart(items) {
+  const wrap = document.createElement("div");
+  if (!items.length) { wrap.innerHTML = '<div class="empty-hint">Sem dados.</div>'; return wrap; }
+  const max = Math.max(...items.map(i => i.value), 1);
+  items.forEach(item => {
+    const row = el("div", {class:"hbar-row"});
+    const label = el("div");
+    label.textContent = item.label;
+    label.style.overflow = "hidden"; label.style.textOverflow = "ellipsis"; label.style.whiteSpace = "nowrap";
+    row.appendChild(label);
+    const track = el("div", {class:"hbar-track"});
+    const fill = el("div", {class:"hbar-fill", style:`width:${(item.value/max*100)}%`});
+    track.appendChild(fill);
+    row.appendChild(track);
+    row.appendChild(el("div", {class:"hbar-value"}, document.createTextNode(item.value)));
+    wrap.appendChild(row);
+  });
+  return wrap;
+}
+
+function lineChart(points) {
+  const wrap = document.createElement("div");
+  if (!points.length) { wrap.innerHTML = '<div class="empty-hint">Sem dados.</div>'; return wrap; }
+  const W = 480, H = 180, padL = 50, padR = 16, padT = 16, padB = 28;
+  const values = points.map(p => p.value);
+  const min = Math.min(0, ...values), max = Math.max(...values, 1);
+  const range = (max - min) || 1;
+  const stepX = points.length > 1 ? (W - padL - padR) / (points.length - 1) : 0;
+  const xAt = i => padL + i * stepX;
+  const yAt = v => padT + (H - padT - padB) * (1 - (v - min) / range);
+  const zeroY = yAt(0);
+
+  let path = "";
+  points.forEach((p, i) => { path += (i===0 ? "M" : "L") + xAt(i) + " " + yAt(p.value) + " "; });
+
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.setAttribute("width", "100%");
+  svg.style.overflow = "visible";
+
+  const baseline = document.createElementNS(svgNS, "line");
+  baseline.setAttribute("x1", padL); baseline.setAttribute("x2", W - padR);
+  baseline.setAttribute("y1", zeroY); baseline.setAttribute("y2", zeroY);
+  baseline.setAttribute("stroke", "var(--baseline, #c3c2b7)"); baseline.setAttribute("stroke-width", "1");
+  svg.appendChild(baseline);
+
+  const pathEl = document.createElementNS(svgNS, "path");
+  pathEl.setAttribute("d", path.trim());
+  pathEl.setAttribute("fill", "none");
+  pathEl.setAttribute("stroke", "var(--series-1)");
+  pathEl.setAttribute("stroke-width", "2");
+  pathEl.setAttribute("stroke-linecap", "round");
+  pathEl.setAttribute("stroke-linejoin", "round");
+  svg.appendChild(pathEl);
+
+  points.forEach((p, i) => {
+    const cx = xAt(i), cy = yAt(p.value);
+    const circle = document.createElementNS(svgNS, "circle");
+    circle.setAttribute("cx", cx); circle.setAttribute("cy", cy); circle.setAttribute("r", "4");
+    circle.setAttribute("fill", "var(--series-1)");
+    const title = document.createElementNS(svgNS, "title");
+    title.textContent = `${p.label}: ${money(p.value)}`;
+    circle.appendChild(title);
+    svg.appendChild(circle);
+
+    const label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", cx); label.setAttribute("y", H - 8);
+    label.setAttribute("text-anchor", "middle");
+    label.setAttribute("font-size", "9");
+    label.setAttribute("fill", "var(--muted, #898781)");
+    label.textContent = p.label.slice(0,3);
+    svg.appendChild(label);
+  });
+
+  wrap.appendChild(svg);
+  return wrap;
+}
+
+/* ============================= EXPORT / IMPORT / RESET ============================= */
+function initToolbar() {
+  document.getElementById("btnExport").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "trairagem2026-backup-" + new Date().toISOString().slice(0,10) + ".json";
+    a.click();
+  });
+  document.getElementById("btnImport").addEventListener("click", () => document.getElementById("importFile").click());
+  document.getElementById("importFile").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        state = data; saveState();
+        renderTab(document.querySelector("#mainTabs button.active").dataset.tab);
+        alert("Backup importado com sucesso.");
+      } catch (err) { alert("Arquivo inválido."); }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
+  document.getElementById("btnReset").addEventListener("click", () => {
+    if (confirm("Isso vai apagar todas as alterações feitas no app (para TODO O TIME, pois os dados são compartilhados) e restaurar os dados originais da planilha. Continuar?")) {
+      state = cloneSeed(); saveState();
+      renderTab(document.querySelector("#mainTabs button.active").dataset.tab);
+    }
+  });
+}
+
+/* ============================= INIT ============================= */
+state = loadState();
+initTabs();
+initToolbar();
+renderDashboard();
+initCloudSync();
+</script>
