@@ -135,17 +135,47 @@
   footer.note { color: var(--muted); font-size: 12px; text-align: center; margin-top: 24px; }
   .empty-hint { color: var(--muted); font-size: 12px; padding: 10px 0; }
   #importFile { display: none; }
+  .gate-wrap { max-width: 380px; margin: 60px auto; padding: 0 20px; }
+  .gate-wrap h2 { font-size: 17px; margin: 0 0 4px; }
+  .gate-wrap .gate-sub { color: var(--text-secondary); font-size: 13px; margin-bottom: 18px; }
+  .gate-wrap details { margin-top: 16px; border-top: 1px dashed var(--grid); padding-top: 14px; }
+  .gate-wrap summary { cursor: pointer; color: var(--text-secondary); font-size: 13px; }
+  .gate-error { color: var(--critical); font-size: 12px; margin-top: 8px; min-height: 14px; }
+  table input:disabled, table select:disabled { opacity: 0.6; cursor: default; }
+  .field-input:disabled { opacity: 0.6; cursor: default; }
+  .role-badge { align-self: center; font-size: 12px; }
 </style>
 
-<div class="wrap">
+<div class="gate-wrap" id="authGate">
+  <div class="card">
+    <h2>⚽ Gestão Time Trairagem 2026</h2>
+    <div class="gate-sub">Escolha como deseja entrar:</div>
+    <button class="primary" id="btnViewerLogin" style="width:100%;">👁 Entrar como visualizador (jogadores)</button>
+    <details>
+      <summary>Sou administrador</summary>
+      <div style="margin-top:10px;">
+        <div class="field-label">E-mail</div>
+        <input type="email" id="adminEmail" class="field-input" style="margin-bottom:8px;">
+        <div class="field-label">Senha</div>
+        <input type="password" id="adminPassword" class="field-input" style="margin-bottom:8px;">
+        <button class="primary" id="btnAdminLogin" style="width:100%;">Entrar como administrador</button>
+        <div class="gate-error" id="authError"></div>
+      </div>
+    </details>
+  </div>
+</div>
+
+<div class="wrap" id="appRoot" style="display:none;">
   <header class="app-header">
     <h1>⚽ Gestão Time Trairagem 2026</h1>
     <div class="header-actions">
+      <span class="small role-badge" id="roleBadge"></span>
       <span class="small" id="syncStatus" style="align-self:center;color:var(--muted);">🔄 Conectando...</span>
       <button class="small" id="btnExport">⬇ Exportar backup</button>
       <button class="small" id="btnImport">⬆ Importar backup</button>
       <input type="file" id="importFile" accept="application/json">
       <button class="small danger" id="btnReset">↺ Restaurar dados originais</button>
+      <button class="small" id="btnLogout">🚪 Sair</button>
     </div>
   </header>
 
@@ -465,10 +495,47 @@ function scheduleCloudSync() {
   }, 700);
 }
 
+let isAdmin = false;
+let snapshotUnsub = null;
+
+function showGate() {
+  cloudReady = false;
+  if (snapshotUnsub) { snapshotUnsub(); snapshotUnsub = null; }
+  document.getElementById("authGate").style.display = "";
+  document.getElementById("appRoot").style.display = "none";
+}
+function showApp() {
+  document.getElementById("authGate").style.display = "none";
+  document.getElementById("appRoot").style.display = "";
+  document.getElementById("roleBadge").textContent = isAdmin ? "🔑 Administrador" : "👁 Somente visualização";
+  document.getElementById("btnImport").style.display = isAdmin ? "" : "none";
+  document.getElementById("btnReset").style.display = isAdmin ? "" : "none";
+}
+function authErrorMessage(err) {
+  if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found" || err.code === "auth/invalid-email") {
+    return "E-mail ou senha inválidos.";
+  }
+  return "Erro: " + err.message;
+}
+
 function initCloudSync() {
+  document.getElementById("btnViewerLogin").addEventListener("click", () => {
+    document.getElementById("authError").textContent = "";
+    auth.signInAnonymously().catch(err => { document.getElementById("authError").textContent = authErrorMessage(err); });
+  });
+  document.getElementById("btnAdminLogin").addEventListener("click", () => {
+    const email = document.getElementById("adminEmail").value.trim();
+    const password = document.getElementById("adminPassword").value;
+    document.getElementById("authError").textContent = "";
+    auth.signInWithEmailAndPassword(email, password).catch(err => { document.getElementById("authError").textContent = authErrorMessage(err); });
+  });
+  document.getElementById("btnLogout").addEventListener("click", () => auth.signOut());
+
   auth.onAuthStateChanged(user => {
-    if (!user) return;
-    teamDocRef.onSnapshot(snap => {
+    if (!user) { showGate(); return; }
+    isAdmin = !user.isAnonymous;
+    showApp();
+    snapshotUnsub = teamDocRef.onSnapshot(snap => {
       if (snap.metadata.hasPendingWrites) { cloudReady = true; return; }
       if (snap.exists) {
         state = snap.data();
@@ -481,7 +548,6 @@ function initCloudSync() {
       renderTab(activeTab);
     }, err => { console.error("Erro ao ouvir mudanças:", err); setSyncStatus("⚠️ Erro de conexão"); });
   });
-  auth.signInAnonymously().catch(err => { console.error("Erro no login anônimo:", err); setSyncStatus("⚠️ Erro de login"); });
 }
 
 /* ============================= HELPERS ============================= */
@@ -513,6 +579,7 @@ function fieldInput(type, value, onChange, opts) {
   else i.value = value ?? "";
   if (opts.step) i.step = opts.step;
   if (opts.placeholder) i.placeholder = opts.placeholder;
+  if (!isAdmin) i.disabled = true;
   i.addEventListener("input", () => {
     let v = type === "number" ? (i.value === "" ? null : parseFloat(i.value)) : i.value;
     if (type === "checkbox") v = i.checked;
@@ -529,6 +596,7 @@ function fieldSelect(options, value, onChange) {
     if (opt.value === value) o.selected = true;
     s.appendChild(o);
   }
+  if (!isAdmin) s.disabled = true;
   s.addEventListener("change", () => { onChange(s.value); saveState(); });
   return s;
 }
@@ -597,6 +665,7 @@ function renderJogadores() {
     tr.appendChild(el("td", {}, fieldInput("text", p.obs, v => p.obs = v)));
     const delBtn = el("button", {class:"small danger"}, document.createTextNode("✕"));
     delBtn.addEventListener("click", () => { state.players.splice(idx,1); saveState(); renderJogadores(); });
+    if (!isAdmin) delBtn.style.display = "none";
     tr.appendChild(el("td", {}, delBtn));
     tbody.appendChild(tr);
   });
@@ -608,6 +677,7 @@ function renderJogadores() {
     state.players.push({name:"", position:"", games:0, goals:0, assists:0, fouls:0, yellow:0, red:0, training:true, obs:""});
     saveState(); renderJogadores();
   });
+  if (!isAdmin) addBtn.style.display = "none";
   card.appendChild(addBtn);
   root.appendChild(card);
 
@@ -656,6 +726,7 @@ function renderResultados() {
     tr.appendChild(badgeCell);
     const delBtn = el("button", {class:"small danger"}, document.createTextNode("✕"));
     delBtn.addEventListener("click", () => { state.results.splice(idx,1); saveState(); renderResultados(); });
+    if (!isAdmin) delBtn.style.display = "none";
     tr.appendChild(el("td", {}, delBtn));
     tbody.appendChild(tr);
   });
@@ -667,6 +738,7 @@ function renderResultados() {
     state.results.push({date:"", opponent:"", status:"confirmado", goalsFor:null, goalsAgainst:null, scorers:"", highlights:0, obs:""});
     saveState(); renderResultados();
   });
+  if (!isAdmin) addBtn.style.display = "none";
   card.appendChild(addBtn);
   root.appendChild(card);
 }
@@ -699,6 +771,7 @@ function renderProximos() {
     tr.appendChild(el("td", {}, fieldInput("text", u.note, v => u.note = v)));
     const delBtn = el("button", {class:"small danger"}, document.createTextNode("✕"));
     delBtn.addEventListener("click", () => { state.upcoming.splice(idx,1); saveState(); renderProximos(); });
+    if (!isAdmin) delBtn.style.display = "none";
     tr.appendChild(el("td", {}, delBtn));
     tbody.appendChild(tr);
   });
@@ -710,6 +783,7 @@ function renderProximos() {
     state.upcoming.push({date:"", time:"11:00", place:"Campo esporte", status:"livre", opponent:"", note:""});
     saveState(); renderProximos();
   });
+  if (!isAdmin) addBtn.style.display = "none";
   card.appendChild(addBtn);
   root.appendChild(card);
 }
@@ -870,6 +944,7 @@ function renderMensalidades() {
       tr.appendChild(el("td", {}, fieldInput("text", d.note, v => d.note = v)));
       const delBtn = el("button", {class:"small danger"}, document.createTextNode("✕"));
       delBtn.addEventListener("click", () => { list.splice(idx,1); saveState(); draw(); });
+      if (!isAdmin) delBtn.style.display = "none";
       tr.appendChild(el("td", {}, delBtn));
       tbody.appendChild(tr);
     });
@@ -879,6 +954,7 @@ function renderMensalidades() {
     body.appendChild(wrap);
     const addBtn = el("button", {class:"add-row-btn primary"}, document.createTextNode("+ Adicionar jogador"));
     addBtn.addEventListener("click", () => { list.push({player:"", paidDate:null, value:25, status:"pendente", note:""}); saveState(); draw(); });
+    if (!isAdmin) addBtn.style.display = "none";
     body.appendChild(addBtn);
     const summary = el("div", {class:"month-summary"});
     summary.id = "duesSummary";
@@ -906,9 +982,11 @@ function renderCaixaMensal() {
     const titleInput = document.createElement("input");
     titleInput.value = m.label; titleInput.style.cssText = "font-size:14px;font-weight:600;border:none;background:transparent;color:var(--text-primary);width:auto";
     titleInput.addEventListener("input", () => { m.label = titleInput.value; saveState(); });
+    if (!isAdmin) titleInput.disabled = true;
     titleRow.appendChild(titleInput);
     const delBtn = el("button", {class:"small danger"}, document.createTextNode("✕ Remover mês"));
     delBtn.addEventListener("click", () => { state.months.splice(idx,1); saveState(); renderCaixaMensal(); });
+    if (!isAdmin) delBtn.style.display = "none";
     titleRow.appendChild(delBtn);
     mc.appendChild(titleRow);
 
@@ -920,6 +998,7 @@ function renderCaixaMensal() {
       input.className = "field-input"; input.type = type || "number"; input.step = "0.01";
       input.value = value ?? "";
       input.addEventListener("input", () => { onChange(input.value === "" ? 0 : parseFloat(input.value)); saveState(); redrawSummary(); });
+      if (!isAdmin) input.disabled = true;
       f.appendChild(input);
       return f;
     }
@@ -938,6 +1017,7 @@ function renderCaixaMensal() {
       tr.appendChild(el("td", {class:"col-med"}, fieldInput("number", it.value, v => { it.value = v; redrawSummary(); })));
       const delItemBtn = el("button", {class:"small danger"}, document.createTextNode("✕"));
       delItemBtn.addEventListener("click", () => { m.items.splice(iidx,1); saveState(); renderCaixaMensal(); });
+      if (!isAdmin) delItemBtn.style.display = "none";
       tr.appendChild(el("td", {}, delItemBtn));
       itemsBody.appendChild(tr);
     });
@@ -945,6 +1025,7 @@ function renderCaixaMensal() {
     mc.appendChild(itemsTable);
     const addItemBtn = el("button", {class:"small"}, document.createTextNode("+ Despesa"));
     addItemBtn.addEventListener("click", () => { m.items.push({desc:"", value:0}); saveState(); renderCaixaMensal(); });
+    if (!isAdmin) addItemBtn.style.display = "none";
     mc.appendChild(addItemBtn);
 
     const summary = el("div", {class:"month-summary"});
@@ -964,6 +1045,7 @@ function renderCaixaMensal() {
     state.months.push({id:"m" + Date.now(), label:"Novo mês", caixaAnterior: prev ? monthSaldo(prev) : 0, pago:0, aReceber:0, totalReceita:0, items:[]});
     saveState(); renderCaixaMensal();
   });
+  if (!isAdmin) addMonthBtn.style.display = "none";
   root.appendChild(addMonthBtn);
 }
 
@@ -983,6 +1065,7 @@ function renderDespesasGerais() {
     tr.appendChild(el("td", {}, fieldInput("number", c.value, v => { c.value = v; renderDespesasGerais(); })));
     const delBtn = el("button", {class:"small danger"}, document.createTextNode("✕"));
     delBtn.addEventListener("click", () => { state.expenseCategories.splice(idx,1); saveState(); renderDespesasGerais(); });
+    if (!isAdmin) delBtn.style.display = "none";
     tr.appendChild(el("td", {}, delBtn));
     tbody.appendChild(tr);
   });
@@ -990,6 +1073,7 @@ function renderDespesasGerais() {
   card.appendChild(table);
   const addBtn = el("button", {class:"add-row-btn primary"}, document.createTextNode("+ Adicionar categoria"));
   addBtn.addEventListener("click", () => { state.expenseCategories.push({category:"", value:0}); saveState(); renderDespesasGerais(); });
+  if (!isAdmin) addBtn.style.display = "none";
   card.appendChild(addBtn);
   const summary = el("div", {class:"month-summary"});
   summary.innerHTML = `<span>Total: <b>${money(total)}</b></span>`;
