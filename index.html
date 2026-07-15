@@ -832,7 +832,7 @@ function renderPagamento() {
   root.innerHTML = "";
   const card = el("div", {class:"card"});
   card.appendChild(el("h2", {}, document.createTextNode("Pagamento de Mensalidade")));
-  card.appendChild(el("div", {class:"field-label"}, document.createTextNode("Selecione seu nome")));
+  card.appendChild(el("div", {class:"field-label"}, document.createTextNode(isAdmin ? "Selecione o jogador" : "Selecione seu nome")));
 
   const names = new Set();
   Object.values(state.dues || {}).forEach(list => list.forEach(d => { if (d.player) names.add(d.player); }));
@@ -874,7 +874,7 @@ function renderPagamento() {
     statusCard.appendChild(el("div", {class:"empty-hint"}, document.createTextNode("Nenhum lançamento encontrado pra esse nome.")));
   } else {
     const table = el("table");
-    table.innerHTML = `<thead><tr><th>Mês</th><th class="col-narrow">Valor</th><th class="col-med">Status</th><th class="col-med">Data pagamento</th></tr></thead>`;
+    table.innerHTML = `<thead><tr><th>Mês</th><th class="col-narrow">Valor</th><th class="col-med">Status</th><th class="col-med">Data pagamento</th>${isAdmin ? '<th class="col-med"></th>' : ''}</tr></thead>`;
     const tbody = el("tbody");
     rows.forEach(({month, entry}) => {
       const tr = el("tr");
@@ -885,6 +885,20 @@ function renderPagamento() {
         : el("span", {class:"badge badge-warning"}, document.createTextNode("Pendente"));
       tr.appendChild(el("td", {}, badge));
       tr.appendChild(el("td", {}, document.createTextNode(entry.paidDate ? dateBR(entry.paidDate) : "—")));
+      if (isAdmin) {
+        if (entry.status === "pago") {
+          tr.appendChild(el("td"));
+        } else {
+          const confirmBtn = el("button", {class:"small primary"}, document.createTextNode("Confirmar pagamento"));
+          confirmBtn.addEventListener("click", () => {
+            entry.status = "pago";
+            entry.paidDate = new Date().toISOString().slice(0,10);
+            saveState();
+            renderPagamento();
+          });
+          tr.appendChild(el("td", {}, confirmBtn));
+        }
+      }
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);
@@ -897,7 +911,7 @@ function renderPagamento() {
   statusCard.appendChild(summary);
   root.appendChild(statusCard);
 
-  if (totalPendente > 0) {
+  if (!isAdmin && totalPendente > 0) {
     const pixCard = el("div", {class:"card"});
     pixCard.appendChild(el("h3", {}, document.createTextNode("Como pagar")));
     pixCard.appendChild(el("div", {}, document.createTextNode(`Você tem ${money(totalPendente)} pendente. Pague via Pix:`)));
