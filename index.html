@@ -150,14 +150,17 @@
   <div class="card">
     <h2> Gestão Time Trairagem 2026</h2>
     <div class="gate-sub">Escolha como deseja entrar:</div>
-    <button class="primary" id="btnViewerLogin" style="width:100%;">👁 Entrar como visualizador (jogadores)</button>
+    <button class="primary" id="btnViewerLogin" style="width:100%;text-transform:uppercase;">👁 Sou jogador</button>
     <details>
-      <summary>Sou administrador</summary>
+      <summary>Login ADM</summary>
       <div style="margin-top:10px;">
         <div class="field-label">E-mail</div>
         <input type="email" id="adminEmail" class="field-input" style="margin-bottom:8px;">
         <div class="field-label">Senha</div>
-        <input type="password" id="adminPassword" class="field-input" style="margin-bottom:8px;">
+        <div style="position:relative; margin-bottom:8px;">
+          <input type="password" id="adminPassword" class="field-input" style="padding-right:36px;">
+          <button type="button" id="btnTogglePassword" title="Mostrar senha" style="position:absolute; right:2px; top:50%; transform:translateY(-50%); border:none; background:transparent; padding:4px 8px; font-size:14px;">👁</button>
+        </div>
         <button class="primary" id="btnAdminLogin" style="width:100%;">Entrar como administrador</button>
         <div class="gate-error" id="authError"></div>
       </div>
@@ -536,6 +539,14 @@ function initCloudSync() {
   document.getElementById("btnViewerLogin").addEventListener("click", () => {
     document.getElementById("authError").textContent = "";
     auth.signInAnonymously().catch(err => { document.getElementById("authError").textContent = authErrorMessage(err); });
+  });
+  document.getElementById("btnTogglePassword").addEventListener("click", () => {
+    const pwd = document.getElementById("adminPassword");
+    const btn = document.getElementById("btnTogglePassword");
+    const hidden = pwd.type === "password";
+    pwd.type = hidden ? "text" : "password";
+    btn.textContent = hidden ? "🙈" : "👁";
+    btn.title = hidden ? "Ocultar senha" : "Mostrar senha";
   });
   document.getElementById("btnAdminLogin").addEventListener("click", () => {
     const email = document.getElementById("adminEmail").value.trim();
