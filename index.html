@@ -856,14 +856,36 @@ function renderPagamento() {
 
   if (!pagamentoSelectedPlayer) return;
 
-  const rows = [];
-  let totalPendente = 0, totalPago = 0;
+  const rawRows = [];
   Object.keys(state.dues || {}).forEach(key => {
     const list = state.dues[key] || [];
     const entry = list.find(d => d.player === pagamentoSelectedPlayer);
     if (!entry) return;
     const monthMeta = state.months.find(m => m.id === key);
-    rows.push({month: monthMeta ? monthMeta.label : key, entry});
+    rawRows.push({month: monthMeta ? monthMeta.label : key, entry});
+  });
+  // Se sobrar mais de um lançamento pro mesmo mês (dados legados/duplicados), fica só um por mês.
+  const byMonth = new Map();
+  rawRows.forEach(r => {
+    const groupKey = findMonthDefIndex(r.month);
+    const key = groupKey === -1 ? r.month : groupKey;
+    const existing = byMonth.get(key);
+    if (!existing || (r.entry.status === "pago" && existing.entry.status !== "pago")) byMonth.set(key, r);
+  });
+  // Completa os meses do ano que esse jogador ainda não tem lançamento (só na tela, não grava nada
+  // até o admin confirmar um pagamento nesse mês).
+  MONTH_DEFS.forEach((def, idx) => {
+    if (!byMonth.has(idx)) {
+      byMonth.set(idx, {month: def.label, synthetic: true,
+        entry: {player: pagamentoSelectedPlayer, paidDate: null, value: 25, status: "pendente", note: ""}});
+    }
+  });
+  const rows = [...byMonth.values()].sort((a, b) => {
+    const ia = findMonthDefIndex(a.month); const ib = findMonthDefIndex(b.month);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+  let totalPendente = 0, totalPago = 0;
+  rows.forEach(({entry}) => {
     if (entry.status === "pago") totalPago += Number(entry.value) || 0;
     else totalPendente += Number(entry.value) || 0;
   });
@@ -876,7 +898,7 @@ function renderPagamento() {
     const table = el("table");
     table.innerHTML = `<thead><tr><th>Mês</th><th class="col-narrow">Valor</th><th class="col-med">Status</th><th class="col-med">Data pagamento</th>${isAdmin ? '<th class="col-med"></th>' : ''}</tr></thead>`;
     const tbody = el("tbody");
-    rows.forEach(({month, entry}) => {
+    rows.forEach(({month, entry, synthetic}) => {
       const tr = el("tr");
       tr.appendChild(el("td", {}, document.createTextNode(month)));
       tr.appendChild(el("td", {}, document.createTextNode(money(entry.value))));
@@ -891,8 +913,19 @@ function renderPagamento() {
         } else {
           const confirmBtn = el("button", {class:"small primary"}, document.createTextNode("Confirmar pagamento"));
           confirmBtn.addEventListener("click", () => {
-            entry.status = "pago";
-            entry.paidDate = new Date().toISOString().slice(0,10);
+            let realEntry = entry;
+            if (synthetic) {
+              const idx = findMonthDefIndex(month);
+              const card = ensureMonthCard(idx);
+              const list = state.dues[card.id] || (state.dues[card.id] = []);
+              realEntry = list.find(d => d.player === pagamentoSelectedPlayer);
+              if (!realEntry) {
+                realEntry = {player: pagamentoSelectedPlayer, paidDate: null, value: 25, status: "pendente", note: ""};
+                list.push(realEntry);
+              }
+            }
+            realEntry.status = "pago";
+            realEntry.paidDate = new Date().toISOString().slice(0,10);
             saveState();
             renderPagamento();
           });
@@ -1069,12 +1102,45 @@ function findMonthDefIndex(label) {
   const norm = normalizeMonthLabel(label);
   return MONTH_DEFS.findIndex(def => norm === normalizeMonthLabel(def.label) || norm === def.key || norm.startsWith(def.key));
 }
+function ensureMonthCard(defIndex) {
+  let card = state.months.find(m => findMonthDefIndex(m.label) === defIndex);
+  if (card) return card;
+  const def = MONTH_DEFS[defIndex];
+  const id = state.dues[def.key] ? def.key : ("m" + Date.now() + "_" + def.key);
+  card = {id, label: def.label, caixaAnterior: 0, pago: 0, aReceber: 0, totalReceita: 0, items: []};
+  state.months.push(card);
+  state.months.sort((a, b) => {
+    const ia = findMonthDefIndex(a.label); const ib = findMonthDefIndex(b.label);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+  return card;
+}
 function gerarMensalidadesDoAno() {
+  // Funde de volta baldes de mensalidade "órfãos" (id antigo tipo "mar") com o cartão
+  // do mês correspondente, caso já exista sob outro id — evita duplicidade.
+  MONTH_DEFS.forEach((def, idx) => {
+    const legacyKey = def.key;
+    const legacyList = state.dues[legacyKey];
+    if (!legacyList || !legacyList.length) return;
+    const card = state.months.find(m => findMonthDefIndex(m.label) === idx);
+    if (!card || card.id === legacyKey) return;
+    const targetList = state.dues[card.id] || (state.dues[card.id] = []);
+    const merged = legacyList.slice();
+    targetList.forEach(d => { if (!merged.some(x => x.player === d.player)) merged.push(d); });
+    state.dues[card.id] = merged;
+    delete state.dues[legacyKey];
+  });
+  // Remove baldes de mensalidade vazios que não pertencem a nenhum mês do Caixa Mensal.
+  Object.keys(state.dues).forEach(key => {
+    if (!state.dues[key].length && !state.months.some(m => m.id === key)) delete state.dues[key];
+  });
+
   const newIds = new Set();
   MONTH_DEFS.forEach((def, idx) => {
     const exists = state.months.some(m => findMonthDefIndex(m.label) === idx);
     if (!exists) {
-      const id = "m" + Date.now() + "_" + def.key;
+      const legacyKey = def.key;
+      const id = state.dues[legacyKey] ? legacyKey : ("m" + Date.now() + "_" + def.key);
       state.months.push({id, label: def.label, caixaAnterior:0, pago:0, aReceber:0, totalReceita:0, items:[]});
       newIds.add(id);
     }
