@@ -148,7 +148,7 @@
 
 <div class="gate-wrap" id="authGate">
   <div class="card">
-    <h2>⚽ Gestão Time Trairagem 2026</h2>
+    <h2> Gestão Time Trairagem 2026</h2>
     <div class="gate-sub">Escolha como deseja entrar:</div>
     <button class="primary" id="btnViewerLogin" style="width:100%;">👁 Entrar como visualizador (jogadores)</button>
     <details>
@@ -167,7 +167,7 @@
 
 <div class="wrap" id="appRoot" style="display:none;">
   <header class="app-header">
-    <h1>⚽ Gestão Time Trairagem 2026</h1>
+    <h1> Gestão Time Trairagem 2026</h1>
     <div class="header-actions">
       <span class="small role-badge" id="roleBadge"></span>
       <span class="small" id="syncStatus" style="align-self:center;color:var(--muted);">🔄 Conectando...</span>
@@ -504,12 +504,26 @@ function showGate() {
   document.getElementById("authGate").style.display = "";
   document.getElementById("appRoot").style.display = "none";
 }
+const VIEWER_TABS = ["dashboard", "proximos"];
 function showApp() {
   document.getElementById("authGate").style.display = "none";
   document.getElementById("appRoot").style.display = "";
   document.getElementById("roleBadge").textContent = isAdmin ? "🔑 Administrador" : "👁 Somente visualização";
   document.getElementById("btnImport").style.display = isAdmin ? "" : "none";
   document.getElementById("btnReset").style.display = isAdmin ? "" : "none";
+
+  const tabButtons = document.querySelectorAll("#mainTabs button");
+  tabButtons.forEach(btn => {
+    btn.style.display = (isAdmin || VIEWER_TABS.includes(btn.dataset.tab)) ? "" : "none";
+  });
+  const activeBtn = document.querySelector("#mainTabs button.active");
+  if (!isAdmin && activeBtn && !VIEWER_TABS.includes(activeBtn.dataset.tab)) {
+    activeBtn.classList.remove("active");
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    document.querySelector('#mainTabs button[data-tab="dashboard"]').classList.add("active");
+    document.getElementById("tab-dashboard").classList.add("active");
+    renderTab("dashboard");
+  }
 }
 function authErrorMessage(err) {
   if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found" || err.code === "auth/invalid-email") {
