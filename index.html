@@ -538,14 +538,20 @@ function initCloudSync() {
     snapshotUnsub = teamDocRef.onSnapshot(snap => {
       if (snap.metadata.hasPendingWrites) { cloudReady = true; return; }
       if (snap.exists) {
-        state = snap.data();
-      } else {
-        teamDocRef.set(state).catch(err => console.error("Erro ao inicializar dados:", err));
+        const incoming = snap.data();
+        const changed = JSON.stringify(incoming) !== JSON.stringify(state);
+        state = incoming;
+        cloudReady = true;
+        setSyncStatus("✅ Sincronizado");
+        if (changed) {
+          const activeTab = document.querySelector("#mainTabs button.active")?.dataset.tab || "dashboard";
+          renderTab(activeTab);
+        }
+        return;
       }
+      teamDocRef.set(state).catch(err => console.error("Erro ao inicializar dados:", err));
       cloudReady = true;
       setSyncStatus("✅ Sincronizado");
-      const activeTab = document.querySelector("#mainTabs button.active")?.dataset.tab || "dashboard";
-      renderTab(activeTab);
     }, err => { console.error("Erro ao ouvir mudanças:", err); setSyncStatus("⚠️ Erro de conexão"); });
   });
 }
@@ -560,7 +566,6 @@ function dateBR(iso) {
   const [y,m,d] = iso.split("-");
   return `${d}/${m}/${y}`;
 }
-function esc(s) { return (s ?? "").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function el(tag, attrs, children) {
   const e = document.createElement(tag);
   if (attrs) for (const k in attrs) {
@@ -964,7 +969,6 @@ function renderMensalidades() {
       let tp = 0, tpe = 0;
       list.forEach(d => { if (d.status === "pago") tp += Number(d.value)||0; else tpe += Number(d.value)||0; });
       summary.innerHTML = `<span>Pago: <b>${money(tp)}</b></span><span>Pendente: <b>${money(tpe)}</b></span><span>Total: <b>${money(tp+tpe)}</b></span>`;
-      saveState();
     }
   }
   picker.addEventListener("change", () => { current = picker.value; draw(); });
