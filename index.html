@@ -1045,8 +1045,16 @@ function renderDashboard() {
 }
 
 /* ============================= FINANCEIRO ============================= */
+function monthDuesTotals(m) {
+  const list = state.dues[m.id];
+  if (!list || !list.length) return null;
+  let pago = 0, aReceber = 0;
+  list.forEach(d => { if (d.status === "pago") pago += Number(d.value) || 0; else aReceber += Number(d.value) || 0; });
+  return {pago, aReceber, total: pago + aReceber};
+}
+function monthPago(m) { const t = monthDuesTotals(m); return t ? t.pago : (Number(m.pago) || 0); }
 function monthTotalDespesas(m) { return m.items.reduce((s,i) => s + (Number(i.value)||0), 0); }
-function monthSaldo(m) { return (Number(m.caixaAnterior)||0) + (Number(m.pago)||0) - monthTotalDespesas(m); }
+function monthSaldo(m) { return (Number(m.caixaAnterior)||0) + monthPago(m) - monthTotalDespesas(m); }
 
 function renderFinanceiro(sub) {
   if (sub === "mensalidades") renderMensalidades();
@@ -1146,11 +1154,29 @@ function renderCaixaMensal() {
       f.appendChild(input);
       return f;
     }
+    function makeReadonlyField(label, value) {
+      const f = el("div");
+      f.appendChild(el("div", {class:"field-label"}, document.createTextNode(label)));
+      const input = document.createElement("input");
+      input.className = "field-input"; input.type = "text"; input.value = money(value); input.disabled = true;
+      f.appendChild(input);
+      return f;
+    }
+    const duesTotals = monthDuesTotals(m);
     fields.appendChild(makeField("Caixa mês anterior", m.caixaAnterior, v => m.caixaAnterior = v));
-    fields.appendChild(makeField("Recebido (Pago)", m.pago, v => m.pago = v));
-    fields.appendChild(makeField("A Receber", m.aReceber, v => m.aReceber = v));
-    fields.appendChild(makeField("Total de Receita", m.totalReceita, v => m.totalReceita = v));
+    if (duesTotals) {
+      fields.appendChild(makeReadonlyField("Recebido (Pago)", duesTotals.pago));
+      fields.appendChild(makeReadonlyField("A Receber", duesTotals.aReceber));
+      fields.appendChild(makeReadonlyField("Total de Receita", duesTotals.total));
+    } else {
+      fields.appendChild(makeField("Recebido (Pago)", m.pago, v => m.pago = v));
+      fields.appendChild(makeField("A Receber", m.aReceber, v => m.aReceber = v));
+      fields.appendChild(makeField("Total de Receita", m.totalReceita, v => m.totalReceita = v));
+    }
     mc.appendChild(fields);
+    if (duesTotals) {
+      mc.appendChild(el("div", {class:"empty-hint"}, document.createTextNode("🔒 Recebido / A Receber / Total calculados automaticamente a partir das Mensalidades deste mês.")));
+    }
 
     mc.appendChild(el("div", {class:"field-label"}, document.createTextNode("Despesas do mês")));
     const itemsTable = el("table");
