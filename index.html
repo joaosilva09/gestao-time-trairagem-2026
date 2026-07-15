@@ -1056,6 +1056,50 @@ function monthPago(m) { const t = monthDuesTotals(m); return t ? t.pago : (Numbe
 function monthTotalDespesas(m) { return m.items.reduce((s,i) => s + (Number(i.value)||0), 0); }
 function monthSaldo(m) { return (Number(m.caixaAnterior)||0) + monthPago(m) - monthTotalDespesas(m); }
 
+const MONTH_DEFS = [
+  {key:"jan", label:"Janeiro"}, {key:"fev", label:"Fevereiro"}, {key:"mar", label:"Março"},
+  {key:"abr", label:"Abril"}, {key:"mai", label:"Maio"}, {key:"jun", label:"Junho"},
+  {key:"jul", label:"Julho"}, {key:"ago", label:"Agosto"}, {key:"set", label:"Setembro"},
+  {key:"out", label:"Outubro"}, {key:"nov", label:"Novembro"}, {key:"dez", label:"Dezembro"}
+];
+function normalizeMonthLabel(s) {
+  return (s || "").toString().trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+function findMonthDefIndex(label) {
+  const norm = normalizeMonthLabel(label);
+  return MONTH_DEFS.findIndex(def => norm === normalizeMonthLabel(def.label) || norm === def.key || norm.startsWith(def.key));
+}
+function gerarMensalidadesDoAno() {
+  const newIds = new Set();
+  MONTH_DEFS.forEach((def, idx) => {
+    const exists = state.months.some(m => findMonthDefIndex(m.label) === idx);
+    if (!exists) {
+      const id = "m" + Date.now() + "_" + def.key;
+      state.months.push({id, label: def.label, caixaAnterior:0, pago:0, aReceber:0, totalReceita:0, items:[]});
+      newIds.add(id);
+    }
+  });
+  state.months.sort((a, b) => {
+    const ia = findMonthDefIndex(a.label); const ib = findMonthDefIndex(b.label);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+  state.players.forEach(p => {
+    if (!p.name) return;
+    state.months.forEach(m => {
+      const list = state.dues[m.id] || (state.dues[m.id] = []);
+      if (!list.some(d => d.player === p.name)) {
+        list.push({player: p.name, paidDate: null, value: 25, status: "pendente", note: ""});
+      }
+    });
+  });
+  let prev = null;
+  state.months.forEach(m => {
+    if (newIds.has(m.id)) m.caixaAnterior = prev ? monthSaldo(prev) : 0;
+    prev = m;
+  });
+  saveState();
+}
+
 function renderFinanceiro(sub) {
   if (sub === "mensalidades") renderMensalidades();
   else if (sub === "caixa") renderCaixaMensal();
@@ -1066,6 +1110,18 @@ function renderMensalidades() {
   const root = document.getElementById("fin-mensalidades");
   root.innerHTML = "";
   const card = el("div", {class:"card"});
+
+  if (isAdmin) {
+    const genBtn = el("button", {class:"small", style:"display:block;margin-bottom:12px;"}, document.createTextNode("🗓 Gerar meses do ano + atletas"));
+    genBtn.addEventListener("click", () => {
+      if (confirm("Isso cria os 12 meses do ano (Janeiro a Dezembro) que ainda não existem e adiciona todos os atletas atuais como pendente (R$25) em todo mês onde ainda não estiverem lançados. Meses e lançamentos já existentes NÃO são alterados. Continuar?")) {
+        gerarMensalidadesDoAno();
+        renderMensalidades();
+      }
+    });
+    card.appendChild(genBtn);
+  }
+
   const picker = el("select", {class:"month-picker"});
   state.months.forEach(m => {
     const o = document.createElement("option");
