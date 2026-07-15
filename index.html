@@ -187,6 +187,7 @@
     <button data-tab="jogadores">Jogadores</button>
     <button data-tab="resultados">Resultados</button>
     <button data-tab="proximos">Próximos Jogos</button>
+    <button data-tab="pagamento">Mensalidade</button>
     <button data-tab="estatisticas">Estatísticas</button>
     <button data-tab="financeiro">Financeiro</button>
   </nav>
@@ -195,6 +196,7 @@
   <section class="tab-panel" id="tab-jogadores"></section>
   <section class="tab-panel" id="tab-resultados"></section>
   <section class="tab-panel" id="tab-proximos"></section>
+  <section class="tab-panel" id="tab-pagamento"></section>
   <section class="tab-panel" id="tab-estatisticas"></section>
   <section class="tab-panel" id="tab-financeiro">
     <nav class="subtabs" id="finSubtabs">
@@ -507,7 +509,7 @@ function showGate() {
   document.getElementById("authGate").style.display = "";
   document.getElementById("appRoot").style.display = "none";
 }
-const VIEWER_TABS = ["dashboard", "proximos"];
+const VIEWER_TABS = ["dashboard", "proximos", "pagamento"];
 function showApp() {
   document.getElementById("authGate").style.display = "none";
   document.getElementById("appRoot").style.display = "";
@@ -663,6 +665,7 @@ function renderTab(name) {
   else if (name === "jogadores") renderJogadores();
   else if (name === "resultados") renderResultados();
   else if (name === "proximos") renderProximos();
+  else if (name === "pagamento") renderPagamento();
   else if (name === "estatisticas") renderEstatisticas();
   else if (name === "financeiro") renderFinanceiro("mensalidades");
 }
@@ -816,6 +819,104 @@ function renderProximos() {
   if (!isAdmin) addBtn.style.display = "none";
   card.appendChild(addBtn);
   root.appendChild(card);
+}
+
+/* ============================= PAGAMENTO DE MENSALIDADE ============================= */
+const PIX_INFO = {
+  key: "joaojsescoramento@gmail.com",
+  name: "Joao Gabriel"
+};
+let pagamentoSelectedPlayer = "";
+function renderPagamento() {
+  const root = document.getElementById("tab-pagamento");
+  root.innerHTML = "";
+  const card = el("div", {class:"card"});
+  card.appendChild(el("h2", {}, document.createTextNode("Pagamento de Mensalidade")));
+  card.appendChild(el("div", {class:"field-label"}, document.createTextNode("Selecione seu nome")));
+
+  const names = new Set();
+  Object.values(state.dues || {}).forEach(list => list.forEach(d => { if (d.player) names.add(d.player); }));
+  const sortedNames = [...names].sort((a,b) => a.localeCompare(b, "pt-BR"));
+
+  const select = document.createElement("select");
+  select.className = "field-input";
+  select.style.marginBottom = "4px";
+  const optBlank = document.createElement("option");
+  optBlank.value = ""; optBlank.textContent = "— Selecione —";
+  select.appendChild(optBlank);
+  sortedNames.forEach(name => {
+    const o = document.createElement("option");
+    o.value = name; o.textContent = name;
+    if (name === pagamentoSelectedPlayer) o.selected = true;
+    select.appendChild(o);
+  });
+  select.addEventListener("change", () => { pagamentoSelectedPlayer = select.value; renderPagamento(); });
+  card.appendChild(select);
+  root.appendChild(card);
+
+  if (!pagamentoSelectedPlayer) return;
+
+  const rows = [];
+  let totalPendente = 0, totalPago = 0;
+  Object.keys(state.dues || {}).forEach(key => {
+    const list = state.dues[key] || [];
+    const entry = list.find(d => d.player === pagamentoSelectedPlayer);
+    if (!entry) return;
+    const monthMeta = state.months.find(m => m.id === key);
+    rows.push({month: monthMeta ? monthMeta.label : key, entry});
+    if (entry.status === "pago") totalPago += Number(entry.value) || 0;
+    else totalPendente += Number(entry.value) || 0;
+  });
+
+  const statusCard = el("div", {class:"card"});
+  statusCard.appendChild(el("h3", {}, document.createTextNode("Suas mensalidades")));
+  if (!rows.length) {
+    statusCard.appendChild(el("div", {class:"empty-hint"}, document.createTextNode("Nenhum lançamento encontrado pra esse nome.")));
+  } else {
+    const table = el("table");
+    table.innerHTML = `<thead><tr><th>Mês</th><th class="col-narrow">Valor</th><th class="col-med">Status</th><th class="col-med">Data pagamento</th></tr></thead>`;
+    const tbody = el("tbody");
+    rows.forEach(({month, entry}) => {
+      const tr = el("tr");
+      tr.appendChild(el("td", {}, document.createTextNode(month)));
+      tr.appendChild(el("td", {}, document.createTextNode(money(entry.value))));
+      const badge = entry.status === "pago"
+        ? el("span", {class:"badge badge-good"}, document.createTextNode("Pago"))
+        : el("span", {class:"badge badge-warning"}, document.createTextNode("Pendente"));
+      tr.appendChild(el("td", {}, badge));
+      tr.appendChild(el("td", {}, document.createTextNode(entry.paidDate ? dateBR(entry.paidDate) : "—")));
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    const wrap = el("div", {class:"table-scroll"});
+    wrap.appendChild(table);
+    statusCard.appendChild(wrap);
+  }
+  const summary = el("div", {class:"month-summary"});
+  summary.innerHTML = `<span>Pago: <b>${money(totalPago)}</b></span><span>Pendente: <b class="${totalPendente>0?'saldo-negative':''}">${money(totalPendente)}</b></span>`;
+  statusCard.appendChild(summary);
+  root.appendChild(statusCard);
+
+  if (totalPendente > 0) {
+    const pixCard = el("div", {class:"card"});
+    pixCard.appendChild(el("h3", {}, document.createTextNode("Como pagar")));
+    pixCard.appendChild(el("div", {}, document.createTextNode(`Você tem ${money(totalPendente)} pendente. Pague via Pix:`)));
+    const pixBox = el("div", {style:"margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;"});
+    const keyText = el("code", {style:"background:var(--page);padding:6px 10px;border-radius:6px;border:1px solid var(--border);font-size:13px;"});
+    keyText.textContent = PIX_INFO.key;
+    pixBox.appendChild(keyText);
+    const copyBtn = el("button", {class:"small"}, document.createTextNode("Copiar chave"));
+    copyBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(PIX_INFO.key).then(() => {
+        copyBtn.textContent = "Copiado!";
+        setTimeout(() => { copyBtn.textContent = "Copiar chave"; }, 1500);
+      }).catch(() => {});
+    });
+    pixBox.appendChild(copyBtn);
+    pixCard.appendChild(pixBox);
+    pixCard.appendChild(el("div", {class:"empty-hint"}, document.createTextNode(`Favorecido: ${PIX_INFO.name}`)));
+    root.appendChild(pixCard);
+  }
 }
 
 /* ============================= ESTATÍSTICAS ============================= */
