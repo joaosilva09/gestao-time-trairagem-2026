@@ -149,8 +149,32 @@
 <div class="gate-wrap" id="authGate">
   <div class="card">
     <h2> Gestão Time Trairagem 2026</h2>
-    <div class="gate-sub">Escolha como deseja entrar:</div>
-    <button class="primary" id="btnViewerLogin" style="width:100%;text-transform:uppercase;">👁 Sou jogador</button>
+    <div class="gate-sub">Sou jogador — entre com seu login:</div>
+    <div class="field-label">E-mail</div>
+    <input type="email" id="playerEmail" class="field-input" style="margin-bottom:8px;">
+    <div class="field-label">Senha</div>
+    <div style="position:relative; margin-bottom:8px;">
+      <input type="password" id="playerPassword" class="field-input" style="padding-right:36px;">
+      <button type="button" id="btnTogglePlayerPassword" title="Mostrar senha" style="position:absolute; right:2px; top:50%; transform:translateY(-50%); border:none; background:transparent; padding:4px 8px; font-size:14px;">👁</button>
+    </div>
+    <button class="primary" id="btnPlayerLogin" style="width:100%;text-transform:uppercase;">Entrar</button>
+    <div class="gate-error" id="playerAuthError"></div>
+
+    <div style="text-align:center;margin-top:12px;font-size:13px;">
+      <a href="#" id="btnShowCadastro" style="color:var(--text-secondary);">Ainda não tem conta? Cadastre-se</a>
+    </div>
+
+    <div id="cadastroBox" style="display:none;margin-top:14px;padding-top:14px;border-top:1px dashed var(--grid);">
+      <div class="field-label">Qual jogador é você?</div>
+      <select id="cadastroPlayerSelect" class="field-input" style="margin-bottom:8px;"></select>
+      <div class="field-label">E-mail</div>
+      <input type="email" id="cadastroEmail" class="field-input" style="margin-bottom:8px;">
+      <div class="field-label">Senha (mín. 6 caracteres)</div>
+      <input type="password" id="cadastroPassword" class="field-input" style="margin-bottom:8px;">
+      <button class="primary" id="btnCadastrar" style="width:100%;">Cadastrar e entrar</button>
+      <div class="gate-error" id="cadastroError"></div>
+    </div>
+
     <details>
       <summary>Login ADM</summary>
       <div style="margin-top:10px;">
@@ -501,10 +525,13 @@ function scheduleCloudSync() {
 }
 
 let isAdmin = false;
+let myPlayerName = "";
+let pendingRegistration = null;
 let snapshotUnsub = null;
 
 function showGate() {
   cloudReady = false;
+  myPlayerName = "";
   if (snapshotUnsub) { snapshotUnsub(); snapshotUnsub = null; }
   document.getElementById("authGate").style.display = "";
   document.getElementById("appRoot").style.display = "none";
@@ -513,7 +540,7 @@ const VIEWER_TABS = ["dashboard", "proximos", "pagamento"];
 function showApp() {
   document.getElementById("authGate").style.display = "none";
   document.getElementById("appRoot").style.display = "";
-  document.getElementById("roleBadge").textContent = isAdmin ? "🔑 Administrador" : "👁 Somente visualização";
+  document.getElementById("roleBadge").textContent = isAdmin ? "🔑 Administrador" : (myPlayerName ? "⚽ " + myPlayerName : "👁 Somente visualização");
   document.getElementById("btnImport").style.display = isAdmin ? "" : "none";
   document.getElementById("btnReset").style.display = isAdmin ? "" : "none";
 
@@ -534,13 +561,62 @@ function authErrorMessage(err) {
   if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found" || err.code === "auth/invalid-email") {
     return "E-mail ou senha inválidos.";
   }
+  if (err.code === "auth/email-already-in-use") return "Esse e-mail já está cadastrado. Faça login.";
+  if (err.code === "auth/weak-password") return "A senha deve ter pelo menos 6 caracteres.";
   return "Erro: " + err.message;
 }
 
+function populateCadastroPlayerSelect() {
+  const select = document.getElementById("cadastroPlayerSelect");
+  if (!select) return;
+  select.innerHTML = "";
+  const optBlank = document.createElement("option");
+  optBlank.value = ""; optBlank.textContent = "— Selecione —";
+  select.appendChild(optBlank);
+  const names = (state.players || []).map(p => p.name).sort((a,b) => a.localeCompare(b, "pt-BR"));
+  names.forEach(name => {
+    const o = document.createElement("option");
+    o.value = name; o.textContent = name;
+    select.appendChild(o);
+  });
+}
+
 function initCloudSync() {
-  document.getElementById("btnViewerLogin").addEventListener("click", () => {
-    document.getElementById("authError").textContent = "";
-    auth.signInAnonymously().catch(err => { document.getElementById("authError").textContent = authErrorMessage(err); });
+  populateCadastroPlayerSelect();
+
+  document.getElementById("btnShowCadastro").addEventListener("click", (e) => {
+    e.preventDefault();
+    const box = document.getElementById("cadastroBox");
+    box.style.display = box.style.display === "none" ? "" : "none";
+  });
+  document.getElementById("btnPlayerLogin").addEventListener("click", () => {
+    const email = document.getElementById("playerEmail").value.trim();
+    const password = document.getElementById("playerPassword").value;
+    document.getElementById("playerAuthError").textContent = "";
+    auth.signInWithEmailAndPassword(email, password).catch(err => { document.getElementById("playerAuthError").textContent = authErrorMessage(err); });
+  });
+  document.getElementById("btnTogglePlayerPassword").addEventListener("click", () => {
+    const pwd = document.getElementById("playerPassword");
+    const btn = document.getElementById("btnTogglePlayerPassword");
+    const hidden = pwd.type === "password";
+    pwd.type = hidden ? "text" : "password";
+    btn.textContent = hidden ? "🙈" : "👁";
+    btn.title = hidden ? "Ocultar senha" : "Mostrar senha";
+  });
+  document.getElementById("btnCadastrar").addEventListener("click", () => {
+    const playerName = document.getElementById("cadastroPlayerSelect").value;
+    const email = document.getElementById("cadastroEmail").value.trim();
+    const password = document.getElementById("cadastroPassword").value;
+    const errEl = document.getElementById("cadastroError");
+    errEl.textContent = "";
+    if (!playerName) { errEl.textContent = "Selecione seu nome."; return; }
+    if (!email) { errEl.textContent = "Informe seu e-mail."; return; }
+    if (password.length < 6) { errEl.textContent = "A senha deve ter pelo menos 6 caracteres."; return; }
+    pendingRegistration = { playerName };
+    auth.createUserWithEmailAndPassword(email, password).catch(err => {
+      pendingRegistration = null;
+      errEl.textContent = authErrorMessage(err);
+    });
   });
   document.getElementById("btnTogglePassword").addEventListener("click", () => {
     const pwd = document.getElementById("adminPassword");
@@ -558,9 +634,39 @@ function initCloudSync() {
   });
   document.getElementById("btnLogout").addEventListener("click", () => auth.signOut());
 
-  auth.onAuthStateChanged(user => {
+  auth.onAuthStateChanged(async user => {
     if (!user) { showGate(); return; }
-    isAdmin = !user.isAnonymous;
+    myPlayerName = "";
+    if (user.isAnonymous) {
+      isAdmin = false;
+    } else if (pendingRegistration) {
+      const reg = pendingRegistration;
+      pendingRegistration = null;
+      try {
+        await db.collection("playerAccounts").doc(user.uid).set({
+          playerName: reg.playerName, email: user.email, createdAt: new Date().toISOString()
+        });
+        isAdmin = false;
+        myPlayerName = reg.playerName;
+      } catch (err) {
+        console.error("Erro ao criar conta de jogador:", err);
+        isAdmin = false;
+      }
+    } else {
+      try {
+        const accSnap = await db.collection("playerAccounts").doc(user.uid).get();
+        if (accSnap.exists) {
+          isAdmin = false;
+          myPlayerName = accSnap.data().playerName || "";
+        } else {
+          isAdmin = true;
+        }
+      } catch (err) {
+        console.error("Erro ao verificar conta:", err);
+        isAdmin = true;
+      }
+    }
+    if (myPlayerName) pagamentoSelectedPlayer = myPlayerName;
     showApp();
     snapshotUnsub = teamDocRef.onSnapshot(snap => {
       if (snap.metadata.hasPendingWrites) { cloudReady = true; return; }
@@ -832,26 +938,33 @@ function renderPagamento() {
   root.innerHTML = "";
   const card = el("div", {class:"card"});
   card.appendChild(el("h2", {}, document.createTextNode("Pagamento de Mensalidade")));
-  card.appendChild(el("div", {class:"field-label"}, document.createTextNode(isAdmin ? "Selecione o jogador" : "Selecione seu nome")));
 
-  const names = new Set();
-  Object.values(state.dues || {}).forEach(list => list.forEach(d => { if (d.player) names.add(d.player); }));
-  const sortedNames = [...names].sort((a,b) => a.localeCompare(b, "pt-BR"));
+  const locked = !isAdmin && !!myPlayerName;
+  if (locked) {
+    pagamentoSelectedPlayer = myPlayerName;
+    card.appendChild(el("div", {class:"field-label"}, document.createTextNode("Jogador: " + myPlayerName)));
+  } else {
+    card.appendChild(el("div", {class:"field-label"}, document.createTextNode(isAdmin ? "Selecione o jogador" : "Selecione seu nome")));
 
-  const select = document.createElement("select");
-  select.className = "field-input";
-  select.style.marginBottom = "4px";
-  const optBlank = document.createElement("option");
-  optBlank.value = ""; optBlank.textContent = "— Selecione —";
-  select.appendChild(optBlank);
-  sortedNames.forEach(name => {
-    const o = document.createElement("option");
-    o.value = name; o.textContent = name;
-    if (name === pagamentoSelectedPlayer) o.selected = true;
-    select.appendChild(o);
-  });
-  select.addEventListener("change", () => { pagamentoSelectedPlayer = select.value; renderPagamento(); });
-  card.appendChild(select);
+    const names = new Set();
+    Object.values(state.dues || {}).forEach(list => list.forEach(d => { if (d.player) names.add(d.player); }));
+    const sortedNames = [...names].sort((a,b) => a.localeCompare(b, "pt-BR"));
+
+    const select = document.createElement("select");
+    select.className = "field-input";
+    select.style.marginBottom = "4px";
+    const optBlank = document.createElement("option");
+    optBlank.value = ""; optBlank.textContent = "— Selecione —";
+    select.appendChild(optBlank);
+    sortedNames.forEach(name => {
+      const o = document.createElement("option");
+      o.value = name; o.textContent = name;
+      if (name === pagamentoSelectedPlayer) o.selected = true;
+      select.appendChild(o);
+    });
+    select.addEventListener("change", () => { pagamentoSelectedPlayer = select.value; renderPagamento(); });
+    card.appendChild(select);
+  }
   root.appendChild(card);
 
   if (!pagamentoSelectedPlayer) return;
